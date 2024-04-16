@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.27)
+project(Server)
+
+set(CMAKE_CXX_STANDARD 17)
+
+file(GLOB SOURCES "main.cpp" "../TCP/src/*.cpp" "../Server/TCP/src/*.cpp")
+
+add_executable(Server ${SOURCES}
+        ../TCP/inc/header.h)
+
+if(WIN32)
+    target_link_libraries(Server wsock32 ws2_32)
+endif()
+
+target_include_directories(Server PRIVATE ../TCP/inc)
+target_include_directories(Server PRIVATE ../Server/TCP/inc)
