@@ -1,55 +1,59 @@
 #include "../inc/header.h"
 
 ThreadPool::~ThreadPool() {
-    terminate_pool_ = true;
-    join();
+    m_terminatePool_ = true;
+    Join();
 }
 
-void ThreadPool::setupThreadPool(uint32_t thread_count) {
-    thread_pool_.clear();
+void ThreadPool::SetupThreadPool(uint32_t thread_count) {
+    m_threadPool_.clear();
     for(uint32_t i = 0; i < thread_count; ++i) {
-        thread_pool_.emplace_back(&ThreadPool::workerLoop, this);
+        m_threadPool_.emplace_back(&ThreadPool::WorkerLoop, this);
     }
 }
 
-void ThreadPool::workerLoop() {
+void ThreadPool::WorkerLoop() {
     std::function<void()> work;
-    while (!terminate_pool_) {
+    while (!m_terminatePool_) {
         {
-            std::unique_lock lock(queue_mutex_);
-            condition_variable_.wait(lock, [this]() { return !queue_work_.empty() || terminate_pool_; });
-            if (terminate_pool_) {
+            std::unique_lock lock(m_queueMutex_);
+            m_conditionVariable_.wait(lock, [this]() { return !m_queueWork_.empty() || m_terminatePool_; });
+            if (m_terminatePool_) {
                 return;
             }
-            work = queue_work_.front();
-            queue_work_.pop();
+            work = m_queueWork_.front();
+            m_queueWork_.pop();
         }
         work();
     }
 }
 
-void ThreadPool::join() {
-    for(auto &thread : thread_pool_) {
-       thread.join();
+void ThreadPool::Join() {
+    for(auto &thread : m_threadPool_) {
+        thread.join();
     }
 }
 
-uint32_t ThreadPool::getThreadCount() const {
-    return thread_pool_.size();
+uint32_t ThreadPool::GetThreadCount() const {
+    return m_threadPool_.size();
 }
 
-void ThreadPool::restartJob() {
-    terminate_pool_ = true;
-    join();
-    terminate_pool_ = false;
+void ThreadPool::RestartJob() {
+    m_terminatePool_ = true;
+    Join();
+    m_terminatePool_ = false;
     std::queue<std::function<void()>> empty;
-    std::swap(queue_work_, empty);
-    setupThreadPool(thread_pool_.size());
+    std::swap(m_queueWork_, empty);
+    SetupThreadPool(m_threadPool_.size());
 }
 
-void ThreadPool::stop() {
-    terminate_pool_ = true;
-    join();
+void ThreadPool::Stop() {
+    m_terminatePool_ = true;
 }
 
-
+void ThreadPool::Start(uint32_t thread_count) {
+    if (m_terminatePool_) {
+        m_terminatePool_ = false;
+        SetupThreadPool(thread_count);
+    }
+}

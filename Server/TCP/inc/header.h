@@ -27,59 +27,64 @@
 
 #include "../../../TCP/inc/header.h"
 
-struct KeepAliveConfig{
-    ka_prop_t ka_idle = 120;
-    ka_prop_t ka_intvl = 3;
-    ka_prop_t ka_cnt = 5;
+class KeepAliveConfiguration {
+public:
+    KeepAliveConfiguration(KeepAliveProperty_t idle = 120,
+                           KeepAliveProperty_t interval = 3,
+                           KeepAliveProperty_t count = 5
+                           );
+    KeepAliveProperty_t GetIdle() const {return idle_;};
+    KeepAliveProperty_t GetInterval() const {return interval_;};
+    KeepAliveProperty_t GetCount() const {return count_;};
+
+    void SetIdle(KeepAliveProperty_t idle) {idle_ = idle;};
+    void SetInterval(KeepAliveProperty_t interval) {interval_ = interval;};
+    void SetCount(KeepAliveProperty_t count) {count_ = count;};
+private:
+    KeepAliveProperty_t idle_;
+    KeepAliveProperty_t interval_;
+    KeepAliveProperty_t count_;
 };
 
 class Server {
 public:
-    enum class Status : uint8_t {
-        up = 0,
-        err_socket_init = 1,
-        err_socket_bind = 2,
-        err_scoket_keep_alive = 3,
-        err_socket_listening = 4,
-        close = 5
-    };
 
-    class Client;
-    class ClientList;
+    class InterfaceServerSession;
 
-    typedef std::function<void(DataBuffer , Client&)> function_handler_typedef;
-    typedef std::function<void(Client&)> function_handler_typedef_connect;
+    using DataHandleFunction = std::function<void(DataBuffer_t , Server::InterfaceServerSession&)>;
+    using ConnectionHandlerFunction = std::function<void(Server::InterfaceServerSession&)>;
 
-    static constexpr auto default_data_handler = [](DataBuffer, Client&){};
-    static constexpr auto default_connsection_handler = [](Client&){};
+    static constexpr auto kDefaultDataHandler
+        = [](DataBuffer_t, Server::InterfaceServerSession&){};
+    static constexpr auto kDefaultConnectionHandler
+        = [](Server::InterfaceServerSession&){};
 
     Server(const uint16_t port,
-              KeepAliveConfig keep_alive_config = {},
-              function_handler_typedef handler = default_data_handler,
-              function_handler_typedef_connect connect_handle = default_connsection_handler,
-              function_handler_typedef_connect disconnect_handle = default_connsection_handler,
-              uint32_t thread_count = HARDWARE_CONCURRENCY
+           KeepAliveConfiguration keep_alive_config     = {},
+           DataHandleFunction handler                   = kDefaultDataHandler,
+           ConnectionHandlerFunction connect_handle     = kDefaultConnectionHandler,
+           ConnectionHandlerFunction disconnect_handle  = kDefaultConnectionHandler,
+           uint32_t thread_count                        = HARDWARE_CONCURRENCY
     );
 
     ~Server();
 
     //setter
-    /** dxxxfjuhxtgfj */
-    void setServerHandler(function_handler_typedef handler);
-    uint16_t setServerPort(const uint16_t port);
+    void SetServerHandler(DataHandleFunction handler);
+    uint16_t SetServerPort(const uint16_t port);
 
 
     //getter
-    ThreadPool& getThreadPool() {return thread_pool_;};
-    Status getServerStatus() const {return server_status_;}
-    uint16_t getServerPort() const {return port_;};
+    ThreadPool& GetThreadPool() {return m_threadPool_;};
+    SocketStatusInfo GetServerStatus() const {return m_serverStatus_;}
+    uint16_t GetServerPort() const {return port_;};
 
-    Status startServer();
+    SocketStatusInfo StartServer();
 
-    void stopServer();
-    void joinLoop() {thread_pool_.join();};
+    void StopServer();
+    void JoinLoop() {m_threadPool_.Join();};
 
-    bool ServerConnectTo(uint32_t host, uint16_t port, function_handler_typedef_connect connect_handle);
+    bool ServerConnectTo(uint32_t host, uint16_t port, ConnectionHandlerFunction connect_handle);
     void ServerSendData(const void* buffer, const size_t size);
     bool ServerSendDataBy(uint32_t host, uint16_t port, const void* buffer, const size_t size);
     bool ServerDisconnectBy(uint32_t host, uint16_t port);
@@ -87,55 +92,47 @@ public:
 
 
 private:
-    typedef std::list<std::unique_ptr<Client>>::iterator iterator_client_;
-    std::list<std::unique_ptr<Client>> client_list_;
+    using ServerSessionIterator = std::list<std::unique_ptr<InterfaceServerSession>>::iterator;
+    std::list<std::unique_ptr<InterfaceServerSession>> m_session_list_;
 
-    function_handler_typedef handler_ = default_data_handler;
-    function_handler_typedef_connect connect_handle_ = default_connsection_handler;
-    function_handler_typedef_connect disconnect_handle_ = default_connsection_handler;
+    DataHandleFunction m_handler_ = kDefaultDataHandler;
+    ConnectionHandlerFunction m_connectHandle_ = kDefaultConnectionHandler;
+    ConnectionHandlerFunction m_disconnectHandle_ = kDefaultConnectionHandler;
 
-    Socket socket_server;
-    Status server_status_ = Status::close;
-    KeepAliveConfig keep_alive_config_;
+    SocketHandle_t m_socketServer_;
+    SocketStatusInfo m_serverStatus_ = SocketStatusInfo::Disconnected;
+    KeepAliveConfiguration m_keepAliveConfig_;
 
-    ThreadPool thread_pool_;
-    std::mutex client_mutex_;
+    ThreadPool m_threadPool_;
+    std::mutex m_clientMutex_;
 
     std::uint16_t port_;
 
-    bool enableKeepAlive(Socket socket);
-    void handlingAcceptLoop();
-    void waitingDataLoop();
+    bool EnableKeepAlive(SocketHandle_t socket);
+    void HandlingAcceptLoop();
+    void WaitingDataLoop();
 
 };
 
-class Server::Client : public ClientBase {
+class Server::InterfaceServerSession : public TCPInterfaceBase {
 public:
-    Client(Socket socket, SocketAddr_in address);
-    virtual ~Client() override;
-    virtual uint32_t getHost() const override;
-    virtual uint16_t getPort() const override;
-    virtual status getStatus() const override {return client_status_;};
-    virtual status disconnect() override;
+    InterfaceServerSession(SocketHandle_t socket, SocketAddressIn_t address);
+    virtual ~InterfaceServerSession() override;
+    virtual uint32_t GetHost() const override;
+    virtual uint16_t GetPort() const override;
+    virtual SockStatusInfo_t GetStatus() const override {return m_connectionStatus_;};
+    virtual SockStatusInfo_t Disconnect() override;
 
-    virtual DataBuffer loadData() override;
-    virtual bool sendData(const void* buffer, const size_t size) const override;
-    virtual SocketType getType() const override {return SocketType::server_socket;}
-
-
+    virtual DataBuffer_t LoadData() override;
+    virtual bool SendData(const void* buffer, const size_t size) const override;
+    virtual SocketType GetType() const override {return SocketType::Server;}
 
 private:
-    friend class Server;
-
-    std::mutex access_mutex_;
-    SocketAddr_in address_;
-    Socket client_socket_;
-    status client_status_ = status::connected;
-
-
+    std::mutex m_accessMutex_;
+    SocketAddressIn_t m_address_;
+    SocketHandle_t m_socketDescriptor_;
+    SockStatusInfo_t m_connectionStatus_ = SockStatusInfo_t::Connected;
 
 };
-
-
 
 #endif //ALL_HEADER_SERVER_H

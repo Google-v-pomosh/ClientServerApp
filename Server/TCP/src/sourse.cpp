@@ -88,50 +88,50 @@ inline int convertError() {
 /*WIN(WSAData WinSocket::w_data;)*/
 
 Server::Server(const uint16_t port,
-                     KeepAliveConfig keep_alive_config,
-                     function_handler_typedef handler,
-                     function_handler_typedef_connect connect_handle,
-                     function_handler_typedef_connect disconnect_handle,
+                     KeepAliveConfiguration keep_alive_config,
+                     DataHandleFunction handler,
+                     ConnectionHandlerFunction connect_handle,
+                     ConnectionHandlerFunction disconnect_handle,
                      uint32_t thread_count
 )
         : port_(port),
-          handler_(handler),
-          connect_handle_(connect_handle),
-          disconnect_handle_(disconnect_handle),
-          thread_pool_(thread_count),
-          keep_alive_config_(keep_alive_config)
+          m_handler_(handler),
+          m_connectHandle_(connect_handle),
+          m_disconnectHandle_(disconnect_handle),
+          m_threadPool_(thread_count),
+          m_keepAliveConfig_(keep_alive_config)
 {}
 
 Server::~Server() {
-    if(server_status_ == Status::up) {
-        stopServer();
+    if(m_serverStatus_ == SocketStatusInfo::Connected) {
+        StopServer();
     }
 }
 
-void Server::stopServer() {
-    thread_pool_.restartJob();
-    server_status_ = Status::close;
-    WIN(closesocket)NIX(close)(socket_server);
-    client_list_.clear();
+void Server::StopServer() {
+    m_threadPool_.RestartJob();
+    m_serverStatus_ = SocketStatusInfo::Disconnected;
+    WIN(closesocket)NIX(close)(m_socketServer_);
+    m_session_list_.clear();
 }
 
-void Server::setServerHandler(Server::function_handler_typedef handler) {
-    this->handler_ = handler;
+void Server::SetServerHandler(Server::DataHandleFunction handler) {
+    this->m_handler_ = handler;
 }
 
-uint16_t Server::setServerPort(const uint16_t port) {
+uint16_t Server::SetServerPort(const uint16_t port) {
     this->port_ = port;
-    startServer();
+    StartServer();
     return port;
 }
 
-Server::Status Server::startServer() {
-    if(server_status_ == Status::up) {
-        stopServer();
+SocketStatusInfo Server::StartServer() {
+    if(m_serverStatus_ == SocketStatusInfo::Connected) {
+        StopServer();
     }
 
 
-    SocketAddr_in address;
+    SocketAddressIn_t address;
 
 #ifdef _WIN32
     address.sin_addr.S_un.S_addr = INADDR_ANY;
@@ -143,55 +143,55 @@ Server::Status Server::startServer() {
     address.sin_family = AF_INET;
 
 #ifdef _WIN32
-    if ((socket_server = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-        return server_status_ = Status::err_socket_init;
+    if ((m_socketServer_ = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+        return m_serverStatus_ = SocketStatusInfo::InitError;
     }
     unsigned long mode = 0;
-    if (ioctlsocket(socket_server, FIONBIO, &mode) == SOCKET_ERROR) {
-        return server_status_ = Status::err_socket_init;
+    if (ioctlsocket(m_socketServer_, FIONBIO, &mode) == SOCKET_ERROR) {
+        return m_serverStatus_ = SocketStatusInfo::InitError;
     }
 #else
-    if ((socket_server = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1) {
-        return server_status_ = Status::err_socket_init;
+    if ((m_socketServer_ = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1) {
+        return m_serverStatus_ = SocketStatusInfo::InitError;
     }
 #endif
 
     int flag = 1;
-    if (setsockopt(socket_server, SOL_SOCKET, SO_REUSEADDR, (char*)&flag, sizeof(flag)) == -1) {
-        return server_status_ = Status::err_socket_init;
+    if (setsockopt(m_socketServer_, SOL_SOCKET, SO_REUSEADDR, (char*)&flag, sizeof(flag)) == -1) {
+        return m_serverStatus_ = SocketStatusInfo::InitError;
     }
 
-    if (bind(socket_server, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        return server_status_ = Status::err_socket_bind;
+    if (bind(m_socketServer_, (struct sockaddr*)&address, sizeof(address)) < 0) {
+        return m_serverStatus_ = SocketStatusInfo::BindError;
     }
 
-    if (listen(socket_server, SOMAXCONN) < 0) {
-        return server_status_ = Status::err_socket_listening;
+    if (listen(m_socketServer_, SOMAXCONN) < 0) {
+        return m_serverStatus_ = SocketStatusInfo::ListeningError;
     }
 
-    server_status_ = Status::up;
-    thread_pool_.addJob([this]{handlingAcceptLoop();});
-    thread_pool_.addJob([this]{waitingDataLoop();});
+    m_serverStatus_ = SocketStatusInfo::Connected;
+    m_threadPool_.AddJob([this]{HandlingAcceptLoop();});
+    m_threadPool_.AddJob([this]{WaitingDataLoop();});
 
-    return server_status_;
+    return m_serverStatus_;
 }
 
 
-bool Server::ServerConnectTo(uint32_t host, uint16_t port, Server::function_handler_typedef_connect connect_handle) {
-    Socket client_socket;
-    SocketAddr_in address;
+bool Server::ServerConnectTo(uint32_t host, uint16_t port, Server::ConnectionHandlerFunction connect_handle) {
+    SocketHandle_t clientSocket;
+    SocketAddressIn_t address;
 
 #ifdef _WIN32
-    if ((client_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
+    if ((clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
         return false;
     }
 #else
-    if ((client_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
+    if ((clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
         return false;
     }
 #endif
 
-    new(&address) SocketAddr_in;
+    new(&address) SocketAddressIn_t;
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = host;
 
@@ -204,46 +204,46 @@ bool Server::ServerConnectTo(uint32_t host, uint16_t port, Server::function_hand
     address.sin_port = htons(port);
 
 #ifdef _WIN32
-    if(connect(client_socket, (sockaddr *)&address, sizeof(address)) == SOCKET_ERROR) {
-        closesocket(client_socket);
+    if(connect(clientSocket, (sockaddr *)&address, sizeof(address)) == SOCKET_ERROR) {
+        closesocket(clientSocket);
         return false;
     }
-    if(!enableKeepAlive(client_socket)) {
-        shutdown(client_socket, 0);
-        closesocket(client_socket);
+    if(!EnableKeepAlive(clientSocket)) {
+        shutdown(clientSocket, 0);
+        closesocket(clientSocket);
     }
 #else
-    if(connect(client_socket, (sockaddr *)&address, sizeof(address)) != 0) {
-        close(client_socket);
+    if(connect(clientSocket, (sockaddr *)&address, sizeof(address)) != 0) {
+        close(clientSocket);
         return false;
     }
-    if(!enableKeepAlive(client_socket)) {
-        shutdown(client_socket, 0);
-        close(client_socket);
+    if(!EnableKeepAlive(clientSocket)) {
+        shutdown(clientSocket, 0);
+        close(clientSocket);
     }
 #endif
 
-    std::unique_ptr<Client> client(new Client(client_socket, address));
+    std::unique_ptr<InterfaceServerSession> client(new InterfaceServerSession(clientSocket, address));
     connect_handle(*client);
 
-    client_mutex_.lock();
-    client_list_.emplace_back(std::move(client));
-    client_mutex_.unlock();
+    m_clientMutex_.lock();
+    m_session_list_.emplace_back(std::move(client));
+    m_clientMutex_.unlock();
 
     return true;
 }
 
 void Server::ServerSendData(const void *buffer, const size_t size) {
-    for (std::unique_ptr<Client>& client : client_list_) {
-        client ->sendData(buffer, size);
+    for (std::unique_ptr<InterfaceServerSession>& client : m_session_list_) {
+        client ->SendData(buffer, size);
     }
 }
 
 bool Server::ServerSendDataBy(uint32_t host, uint16_t port, const void *buffer, const size_t size) {
     bool dataIsSended = false;
-    for(std::unique_ptr<Client>& client : client_list_) {
-        if (client->getHost() == host && client->getPort() == port){
-            client->sendData(buffer, size);
+    for(std::unique_ptr<InterfaceServerSession>& client : m_session_list_) {
+        if (client->GetHost() == host && client->GetPort() == port){
+            client->SendData(buffer, size);
             dataIsSended = true;
         }
     }
@@ -252,9 +252,9 @@ bool Server::ServerSendDataBy(uint32_t host, uint16_t port, const void *buffer, 
 
 bool Server::ServerDisconnectBy(uint32_t host, uint16_t port) {
     bool clientIsDisconnected = false;
-    for(std::unique_ptr<Client>& client : client_list_) {
-        if (client->getHost() == host && client->getPort() == port){
-            client->disconnect();
+    for(std::unique_ptr<InterfaceServerSession>& client : m_session_list_) {
+        if (client->GetHost() == host && client->GetPort() == port){
+            client->Disconnect();
             clientIsDisconnected = true;
         }
     }
@@ -262,55 +262,55 @@ bool Server::ServerDisconnectBy(uint32_t host, uint16_t port) {
 }
 
 void Server::ServerDisconnectAll() {
-    for (std::unique_ptr<Client>& client : client_list_) {
-        client->disconnect();
+    for (std::unique_ptr<InterfaceServerSession>& client : m_session_list_) {
+        client->Disconnect();
     }
 }
 
-void Server::handlingAcceptLoop() {
-    SockLen_t addrLen = sizeof(SocketAddr_in);
-    SocketAddr_in clientAddr;
+void Server::HandlingAcceptLoop() {
+    SocketLength_t addrLen = sizeof(SocketAddressIn_t);
+    SocketAddressIn_t clientAddr;
 #ifdef _WIN32
-    if(Socket clientSocket = accept(socket_server, (struct sockaddr*)&clientAddr, &addrLen);
-              clientSocket != 0 && server_status_ == Status::up)
+    if(SocketHandle_t clientSocket = accept(m_socketServer_, (struct sockaddr*)&clientAddr, &addrLen);
+              clientSocket != 0 && m_serverStatus_ == SocketStatusInfo::Connected)
     {
-        if (enableKeepAlive(clientSocket))
+        if (EnableKeepAlive(clientSocket))
         {
-            std::unique_ptr<Client> client(new Client(clientSocket, clientAddr));
-            connect_handle_(*client);
-            client_mutex_.lock();
-            client_list_.emplace_back(std::move(client));
-            client_mutex_.unlock();
+            std::unique_ptr<InterfaceServerSession> client(new InterfaceServerSession(clientSocket, clientAddr));
+            m_connectHandle_(*client);
+            m_clientMutex_.lock();
+            m_session_list_.emplace_back(std::move(client));
+            m_clientMutex_.unlock();
         } else {
             shutdown(clientSocket, 0);
             closesocket(clientSocket);
         }
     }
 #else
-    if (Socket clientSocket = accept4(socket_server, (struct sockaddr*)&clientAddr, &addrLen, SOCK_NONBLOCK); clientSocket >= 0 && server_status_ == Status::up) {
-        if(enableKeepAlive(clientSocket)) {
+    if (SocketHandle_t clientSocket = accept4(m_socketServer_, (struct sockaddr*)&clientAddr, &addrLen, SOCK_NONBLOCK); clientSocket >= 0 && m_serverStatus_ == SocketStatusInfo::Connected) {
+        if(EnableKeepAlive(clientSocket)) {
             std::unique_ptr<Client> client(new Client(clientSocket, clientAddr));
-            connect_handle_(*client);
-            client_mutex_.lock();
-            client_list_.emplace_back(std::move(client));
-            client_mutex_.unlock();
+            m_connectHandle_(*client);
+            m_clientMutex_.lock();
+            m_session_list_.emplace_back(std::move(client));
+            m_clientMutex_.unlock();
         } else {
             shutdown(clientSocket, 0);
             close(clientSocket);
         }
     }
 #endif
-    if(server_status_ == Status::up) {
-        thread_pool_.addJob([this]() { handlingAcceptLoop(); });
+    if(m_serverStatus_ == SocketStatusInfo::Connected) {
+        m_threadPool_.AddJob([this]() { HandlingAcceptLoop(); });
     }
 }
 
-bool Server::enableKeepAlive(Socket socket) {
+bool Server::EnableKeepAlive(SocketHandle_t socket) {
     int flag = 1;
 #ifdef _WIN32
     tcp_keepalive keepAlive {1,
-                             keep_alive_config_.ka_idle * 1000,
-                             keep_alive_config_.ka_intvl * 1000};
+                             m_keepAliveConfig_.GetIdle() * 1000,
+                             m_keepAliveConfig_.GetInterval() * 1000};
     if (setsockopt(socket,
                    SOL_SOCKET,
                    SO_KEEPALIVE,
@@ -334,39 +334,39 @@ bool Server::enableKeepAlive(Socket socket) {
     if(setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) == -1) {
         return false;
     }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, &keep_alive_config_.ka_idle, sizeof(keep_alive_config_.ka_idle)) == -1) {
+    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, &m_keepAliveConfig_.ka_idle, sizeof(m_keepAliveConfig_.ka_idle)) == -1) {
         return false;
     }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL, &keep_alive_config_.ka_intvl, sizeof(keep_alive_config_.ka_intvl)) == -1) {
+    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL, &m_keepAliveConfig_.ka_intvl, sizeof(m_keepAliveConfig_.ka_intvl)) == -1) {
         return false;
     }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPCNT, &keep_alive_config_.ka_cnt, sizeof(keep_alive_config_.ka_cnt)) == -1) {
+    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPCNT, &m_keepAliveConfig_.ka_cnt, sizeof(m_keepAliveConfig_.ka_cnt)) == -1) {
         return false;
     }
 #endif
     return true;
 }
 
-void Server::waitingDataLoop() {
+void Server::WaitingDataLoop() {
     {
-        std::lock_guard lockGuard(client_mutex_);
-        for (auto begin = client_list_.begin(), end = client_list_.end(); begin != end; ++begin) {
+        std::lock_guard lockGuard(m_clientMutex_);
+        for (auto begin = m_session_list_.begin(), end = m_session_list_.end(); begin != end; ++begin) {
             auto &client = *begin;
             if (client) {
-                if (DataBuffer dataBuffer = client->loadData(); !dataBuffer.empty()) {
-                    thread_pool_.addJob([this, data = std::move(dataBuffer), &client] {
-                        client->access_mutex_.lock();
-                        handler_(std::move(data), *client);
-                        client->access_mutex_.unlock();
+                if (DataBuffer_t dataBuffer = client->LoadData(); !dataBuffer.empty()) {
+                    m_threadPool_.AddJob([this, data = std::move(dataBuffer), &client] {
+                        client->m_accessMutex_.lock();
+                        m_handler_(std::move(data), *client);
+                        client->m_accessMutex_.unlock();
                     });
-                } else if (client->client_status_ == SocketStatus::disconnected) {
-                    thread_pool_.addJob([this, &client, begin] {
-                        client->access_mutex_.lock();
-                        Client *pointer = client.release();
+                } else if (client->m_connectionStatus_ == SocketStatusInfo::Disconnected) {
+                    m_threadPool_.AddJob([this, &client, begin] {
+                        client->m_accessMutex_.lock();
+                        InterfaceServerSession *pointer = client.release();
                         client = nullptr;
-                        pointer->access_mutex_.unlock();
-                        disconnect_handle_(*pointer);
-                        client_list_.erase(begin);
+                        pointer->m_accessMutex_.unlock();
+                        m_disconnectHandle_(*pointer);
+                        m_session_list_.erase(begin);
                         delete pointer;
 
                     });
@@ -374,98 +374,98 @@ void Server::waitingDataLoop() {
             }
         }
     }
-    if (server_status_ == Status::up) {
-        thread_pool_.addJob([this](){waitingDataLoop();});
+    if (m_serverStatus_ == SocketStatusInfo::Connected) {
+        m_threadPool_.AddJob([this](){WaitingDataLoop();});
     }
 }
 
 
-Server::Client::Client(Socket socket, SocketAddr_in address)
-        : address_(address), client_socket_(socket) {}
+Server::InterfaceServerSession::InterfaceServerSession(SocketHandle_t socket, SocketAddressIn_t address)
+        : m_address_(address), m_socketDescriptor_(socket) {}
 
 
-Server::Client::~Client(){
+Server::InterfaceServerSession::~InterfaceServerSession(){
 #ifdef _WIN32
-    if(client_socket_ == INVALID_SOCKET) {
+    if(m_socketDescriptor_ == INVALID_SOCKET) {
         return;
     }
-    shutdown(client_socket_, SD_BOTH);
-    closesocket(client_socket_);
+    shutdown(m_socketDescriptor_, SD_BOTH);
+    closesocket(m_socketDescriptor_);
 #else
-    if(client_socket_ == -1) {
+    if(m_socketDescriptor_ == -1) {
         return;
     }
-    shutdown(client_socket_, SD_BOTH);
-    close(client_socket_);
+    shutdown(m_socketDescriptor_, SD_BOTH);
+    close(m_socketDescriptor_);
 #endif
 }
 
-ClientBase::status Server::Client::disconnect() {
-    client_status_ = status::disconnected;
+TCPInterfaceBase::SockStatusInfo_t Server::InterfaceServerSession::Disconnect() {
+    m_connectionStatus_ = SockStatusInfo_t::Disconnected;
 #ifdef _WIN32
-    if (client_socket_ == INVALID_SOCKET) {
-        return client_status_;
+    if (m_socketDescriptor_ == INVALID_SOCKET) {
+        return m_connectionStatus_;
     }
-    shutdown(client_socket_, SD_BOTH);
-    closesocket(client_socket_);
-    client_socket_ = INVALID_SOCKET;
+    shutdown(m_socketDescriptor_, SD_BOTH);
+    closesocket(m_socketDescriptor_);
+    m_socketDescriptor_ = INVALID_SOCKET;
 #else
-    if (client_socket_ == -1) {
-        return client_status_;
+    if (m_socketDescriptor_ == -1) {
+        return m_connectionStatus_;
     }
-    shutdown(client_socket_, SD_BOTH);
-    close(client_socket_);
-    client_socket_ = -1;
+    shutdown(m_socketDescriptor_, SD_BOTH);
+    close(m_socketDescriptor_);
+    m_socketDescriptor_ = -1;
 #endif
-    return client_status_;
+    return m_connectionStatus_;
 }
 
-bool Server::Client::sendData(const void *buffer, const size_t size) const {
-    if(client_status_ != SocketStatus::connected) {
+bool Server::InterfaceServerSession::SendData(const void *buffer, const size_t size) const {
+    if(m_connectionStatus_ != SocketStatusInfo::Connected) {
         return false;
     }
     void* sendBuffer = malloc(size + sizeof (uint32_t));
     memcpy(reinterpret_cast<char*>(sendBuffer) + sizeof (uint32_t ), buffer, size);
     *reinterpret_cast<uint32_t*>(sendBuffer) = size;
-    if(send(client_socket_, reinterpret_cast<char*>(sendBuffer), size + sizeof (int), 0) < 0){
+    if(send(m_socketDescriptor_, reinterpret_cast<char*>(sendBuffer), size + sizeof (int), 0) < 0){
         return false;
     }
     free(sendBuffer);
     return true;
 }
 
-DataBuffer Server::Client::loadData() {
-    if (client_status_ != SocketStatus::connected) {
-        return DataBuffer();
+DataBuffer_t Server::InterfaceServerSession::LoadData() {
+    if (m_connectionStatus_ != SocketStatusInfo::Connected) {
+        return DataBuffer_t();
     }
-    DataBuffer dataBuffer;
+    DataBuffer_t dataBuffer;
     uint32_t size;
     int error = 0;
 #ifdef _WIN32
-    if (u_long t = true; SOCKET_ERROR == ioctlsocket(client_socket_, FIONBIO, &t)) {
-        return DataBuffer();
+    if (u_long t = true; SOCKET_ERROR == ioctlsocket(m_socketDescriptor_, FIONBIO, &t)) {
+        return DataBuffer_t();
     }
-    int answer = recv(client_socket_, (char *)&size, sizeof(size), 0);
-    if (u_long t = false; SOCKET_ERROR == ioctlsocket(client_socket_, FIONBIO, &t)){
-        return DataBuffer();
+    int answer = recv(m_socketDescriptor_, (char *)&size, sizeof(size), 0);
+    if (u_long t = false; SOCKET_ERROR == ioctlsocket(m_socketDescriptor_, FIONBIO, &t)){
+        return DataBuffer_t();
     }
 #else
-    int answer = recv(client_socket_, (char *)&size, sizeof(size), MSG_DONTWAIT);
+    int answer = recv(m_socketDescriptor_, (char *)&size, sizeof(size), MSG_DONTWAIT);
 #endif
     if (!answer) {
-        disconnect();
-        return DataBuffer();
+        Disconnect();
+        return DataBuffer_t();
     } else if (answer == -1) {
         WIN (
                 error = convertError();
                 if (!error) {
-                    SockLen_t length = sizeof (error);
-                    getsockopt(client_socket_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
+                    SocketLength_t length = sizeof (error);
+                    getsockopt(m_socketDescriptor_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 }
         )
         NIX (
-                SockLen_t length = sizeof (error);
-                getsockopt(client_socket_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
+                SocketLength_t length = sizeof (error);
+                getsockopt(m_socketDescriptor_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 if (!error) {
                     error = errno;
                 }
@@ -478,43 +478,52 @@ DataBuffer Server::Client::loadData() {
         case ETIMEDOUT:
         case ECONNRESET:
         case EPIPE:
-            disconnect();
+            Disconnect();
             [[fallthrough]];
         case EAGAIN:
-            return DataBuffer ();
+            return DataBuffer_t();
         default:
-            disconnect();
+            Disconnect();
             std::cerr << "Unhandled error!\n"
                       << "Code: " << error << " Error: " << std::strerror(error) << '\n';
-            return DataBuffer();
+            return DataBuffer_t();
     }
 
     if (!size) {
-        return DataBuffer();
+        return DataBuffer_t();
     }
 
     dataBuffer.resize(size);
-    int recvResult = recv(client_socket_, reinterpret_cast<char*>(dataBuffer.data()), dataBuffer.size(), 0);
+    int recvResult = recv(m_socketDescriptor_, reinterpret_cast<char*>(dataBuffer.data()), dataBuffer.size(), 0);
     if (recvResult < 0) {
         int err = errno;
         std::cerr << "Error receiving data: " << std::strerror(err) << '\n';
-        disconnect();
-        return DataBuffer();
+        Disconnect();
+        return DataBuffer_t();
     }
 
     return dataBuffer;
 }
 
-uint32_t Server::Client::getHost() const {
+uint32_t Server::InterfaceServerSession::GetHost() const {
     return
             WIN (
-                    address_.sin_addr.S_un.S_addr
+                    m_address_.sin_addr.S_un.S_addr
             )
             NIX (
-                    address_.sin_addr.s_addr
+                    m_address_.sin_addr.s_addr
             );
 }
 
-uint16_t Server::Client::getPort() const {
-    return address_.sin_port;
+uint16_t Server::InterfaceServerSession::GetPort() const {
+    return m_address_.sin_port;
 }
+
+KeepAliveConfiguration::KeepAliveConfiguration(KeepAliveProperty_t idle,
+                                               KeepAliveProperty_t interval,
+                                               KeepAliveProperty_t count
+                                               )
+                                               :    idle_(idle),
+                                                    interval_(interval),
+                                                    count_(count)
+                                               {}

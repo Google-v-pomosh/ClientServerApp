@@ -89,43 +89,43 @@ inline int convertError() {
 #endif
 
 Client::Client() noexcept
-    :   client_status_(status::disconnected)
+    :   client_status_(SockStatusInfo_t::Disconnected)
     {}
 
 Client::Client(ThreadPool *threadPool) noexcept
-    :   threadManagmentType(ThreadManagementType::thread_pool),
+    :   threadManagmentType(ThreadManagementType::ThreadPool),
         threadClient(threadPool),
-        client_status_(status::disconnected)
+        client_status_(SockStatusInfo_t::Disconnected)
     {}
 
 Client::~Client(){
-    disconnect();
+    Disconnect();
     WIN(WSACleanup();)
     switch (threadManagmentType) {
-        case Client::ThreadManagementType::single_thread:
+        case Client::ThreadManagementType::SingleThread:
             if (threadClient.thread) {
                 threadClient.thread->join();
             }
             delete threadClient.thread;
         break;
-        case Client::ThreadManagementType::thread_pool:
+        case Client::ThreadManagementType::ThreadPool:
         break;
     }
 }
 
-Client::status Client::disconnect() noexcept {
-    if (client_status_ != status::connected){
+Client::SockStatusInfo_t Client::Disconnect() noexcept {
+    if (client_status_ != SockStatusInfo_t::Connected){
         return client_status_;
     }
-    client_status_ = status::disconnected;
+    client_status_ = SockStatusInfo_t::Disconnected;
     switch (threadManagmentType) {
-        case Client::ThreadManagementType::single_thread:
+        case Client::ThreadManagementType::SingleThread:
             if(threadClient.thread){
                 threadClient.thread->join();
             }
             delete threadClient.thread;
         break;
-        case Client::ThreadManagementType::thread_pool:
+        case Client::ThreadManagementType::ThreadPool:
         break;
     }
     shutdown(client_socket_, SD_BOTH);
@@ -135,11 +135,11 @@ Client::status Client::disconnect() noexcept {
 
 void Client::handleSingleThread() {
     try {
-        while (client_status_ == status::connected) {
-            if (DataBuffer dataBuffer = loadData(); !dataBuffer.empty()) {
+        while (client_status_ == SockStatusInfo_t::Connected) {
+            if (DataBuffer_t dataBuffer = LoadData(); !dataBuffer.empty()) {
                 std::lock_guard lockGuard(handle_mutex_);
                 function_handler(std::move(dataBuffer));
-            } else if (client_status_ != status::connected) {
+            } else if (client_status_ != SockStatusInfo_t::Connected) {
                 return;
             }
         }
@@ -151,12 +151,12 @@ void Client::handleSingleThread() {
 
 void Client::handleThreadPool() {
     try {
-        if (DataBuffer dataBuffer = loadData(); !dataBuffer.empty()) {
+        if (DataBuffer_t dataBuffer = LoadData(); !dataBuffer.empty()) {
             std::lock_guard lockGuard(handle_mutex_);
             function_handler(std::move(dataBuffer));
         }
-        if (client_status_ == status::connected) {
-            threadClient.threadPool->addJob([this]{handleThreadPool();});
+        if (client_status_ == SockStatusInfo_t::Connected) {
+            threadClient.threadPool->AddJob([this]{handleThreadPool();});
         }
     } catch (std::exception& exception) {
         std::cerr << exception.what() << std::endl;
@@ -167,21 +167,21 @@ void Client::handleThreadPool() {
     }
 }
 
-ClientBase::status Client::connectTo(uint32_t host, uint16_t port) noexcept {
+TCPInterfaceBase::SockStatusInfo_t Client::connectTo(uint32_t host, uint16_t port) noexcept {
 
 #ifdef _WIN32
-    WinSocket winsock_initer;
+    WindowsSocketInitializer winsockInitializer;
     /*if (WSAStartup(MAKEWORD(2, 2), &w_data) != 0)
     {};*/
     if ((client_socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
-        return  client_status_ = status::err_socket_init;
+        return  client_status_ = SockStatusInfo_t::InitError;
     }
 #else
     if ((client_socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
-        return  client_status_ = status::err_socket_init;
+        return  client_status_ = status::InitError;
     }
 #endif
-    new(&address_) SocketAddr_in;
+    new(&address_) SocketAddressIn_t;
     address_.sin_family = AF_INET;
     address_.sin_addr.s_addr = host;
 
@@ -195,42 +195,42 @@ ClientBase::status Client::connectTo(uint32_t host, uint16_t port) noexcept {
 
     if (connect(client_socket_, (sockaddr*)&address_, sizeof (address_)) WINIX(== SOCKET_ERROR,!= 0)) {
         WIN(closesocket)NIX(close)(client_socket_);
-        return client_status_ = status::err_socket_connect;
+        return client_status_ = SockStatusInfo_t::ConnectError;
     }
-    return client_status_ = status::connected;
+    return client_status_ = SockStatusInfo_t::Connected;
 }
 
-DataBuffer Client::loadData() {
-    if (client_status_ != SocketStatus::connected) {
-        return DataBuffer();
+DataBuffer_t Client::LoadData() {
+    if (client_status_ != SocketStatusInfo::Connected) {
+        return DataBuffer_t();
     }
-    DataBuffer dataBuffer;
+    DataBuffer_t dataBuffer;
     uint32_t size;
     int error = 0;
 #ifdef _WIN32
     if (u_long t = true; SOCKET_ERROR == ioctlsocket(client_socket_, FIONBIO, &t)) {
-        return DataBuffer();
+        return DataBuffer_t();
     }
     int answer = recv(client_socket_, (char *)&size, sizeof(size), 0);
     if (u_long t = false; SOCKET_ERROR == ioctlsocket(client_socket_, FIONBIO, &t)){
-        return DataBuffer();
+        return DataBuffer_t();
     }
 #else
     int answer = recv(client_socket_, (char *)&size, sizeof(size), MSG_DONTWAIT);
 #endif
     if (!answer) {
-        disconnect();
-        return DataBuffer();
+        Disconnect();
+        return DataBuffer_t();
     } else if (answer == -1) {
         WIN (
                 error = convertError();
                 if (!error) {
-                    SockLen_t length = sizeof (error);
+                    SocketLength_t length = sizeof (error);
                     getsockopt(client_socket_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 }
         )
         NIX (
-                SockLen_t length = sizeof (error);
+                SocketLength_t length = sizeof (error);
                 getsockopt(client_socket_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 if (!error) {
                     error = errno;
@@ -243,20 +243,20 @@ DataBuffer Client::loadData() {
             case ETIMEDOUT:
             case ECONNRESET:
             case EPIPE:
-                disconnect();
+                Disconnect();
                 [[fallthrough]];
             case EAGAIN:
-                return DataBuffer ();
+                return DataBuffer_t();
             default:
-                disconnect();
+                Disconnect();
                 std::cerr << "Unhandled error!\n"
                           << "Code: " << error << " Error: " << std::strerror(error) << '\n';
-                return DataBuffer();
+                return DataBuffer_t();
         }
     }
 
     if (!size) {
-        return DataBuffer();
+        return DataBuffer_t();
     }
 
     dataBuffer.resize(size);
@@ -264,15 +264,15 @@ DataBuffer Client::loadData() {
     if (recvResult < 0) {
         int err = errno;
         std::cerr << "Error receiving data: " << std::strerror(err) << '\n';
-        disconnect();
-        return DataBuffer();
+        Disconnect();
+        return DataBuffer_t();
     }
 
     return dataBuffer;
 }
 
-DataBuffer Client::loadDataSync() {
-    DataBuffer dataBuffer;
+DataBuffer_t Client::loadDataSync() {
+    DataBuffer_t dataBuffer;
     uint32_t size = 0;
     int answer = recv(client_socket_, reinterpret_cast<char*>(&size), sizeof(size), 0);
     if(size && answer == sizeof(size)){
@@ -288,26 +288,26 @@ void Client::setHandler(Client::function_handler_typedef handler) {
         function_handler = handler;
     }
     switch (threadManagmentType) {
-        case Client::ThreadManagementType::single_thread:
+        case Client::ThreadManagementType::SingleThread:
             if(threadClient.thread){
                 return;
             }
             threadClient.thread = new std::thread(&Client::handleSingleThread, this);
         break;
-        case Client::ThreadManagementType::thread_pool:
-            threadClient.threadPool->addJob([this]{handleThreadPool();});
+        case Client::ThreadManagementType::ThreadPool:
+            threadClient.threadPool->AddJob([this]{handleThreadPool();});
         break;
     }
 }
 
 /*void Client::joinHandler() {
     switch (threadManagmentType) {
-        case Client::ThreadManagementType::single_thread:
+        case Client::ThreadManagementType::SingleThread:
             if (threadClient.thread){
                 threadClient.thread->join();
             }
         break;
-        case Client::ThreadManagementType::thread_pool:
+        case Client::ThreadManagementType::ThreadPool:
             threadClient.threadPool->join();
         break;
     }
@@ -315,14 +315,14 @@ void Client::setHandler(Client::function_handler_typedef handler) {
 
 void Client::joinHandler() const {
     switch (threadManagmentType) {
-        case Client::ThreadManagementType::single_thread:
+        case Client::ThreadManagementType::SingleThread:
             if (threadClient.thread) {
                 threadClient.thread->join();
             }
             break;
-        case Client::ThreadManagementType::thread_pool:
+        case Client::ThreadManagementType::ThreadPool:
             if (threadClient.threadPool) {
-                threadClient.threadPool->join();
+                threadClient.threadPool->Join();
             }
             break;
         default:
@@ -367,7 +367,7 @@ void Client::joinHandler() const {
 
     return true; // Данные успешно отправлены
 }*/
-bool Client::sendData(const void *buffer, const size_t size) const {
+bool Client::SendData(const void *buffer, const size_t size) const {
     std::vector<char> sendBuffer(size + sizeof(int));
     *reinterpret_cast<int*>(sendBuffer.data()) = static_cast<int>(size);
     memcpy(sendBuffer.data() + sizeof(int), buffer, size);
@@ -387,7 +387,7 @@ bool Client::sendData(const void *buffer, const size_t size) const {
 
 
 
-uint32_t Client::getHost() const {
+uint32_t Client::GetHost() const {
     return
             NIX(
                     address_.sin_addr.s_addr
@@ -397,6 +397,6 @@ uint32_t Client::getHost() const {
                     );
 }
 
-uint16_t Client::getPort() const {
+uint16_t Client::GetPort() const {
     return address_.sin_port;
 }

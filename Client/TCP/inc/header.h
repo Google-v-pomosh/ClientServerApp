@@ -20,11 +20,11 @@ typedef int socket_t;
 #include "../../../TCP/inc/header.h"
 #include <memory.h>
 
-class Client : public ClientBase {
+class Client : public TCPInterfaceBase {
 private:
     enum class ThreadManagementType : bool {
-        single_thread = false,
-        thread_pool = true
+        SingleThread = false,
+        ThreadPool = true
     };
 
     union ThreadClient {
@@ -36,38 +36,38 @@ private:
 
     };
 
-    SocketAddr_in address_;
+    SocketAddressIn_t address_;
     socket_t client_socket_;
 
     std::mutex handle_mutex_;
-    std::function<void(DataBuffer)> function_handler = [](DataBuffer){};
+    std::function<void(DataBuffer_t)> function_handler = [](DataBuffer_t){};
     ThreadManagementType threadManagmentType;
     ThreadClient threadClient;
-    status client_status_ = status::disconnected;
+    SockStatusInfo_t client_status_ = SockStatusInfo_t::Disconnected;
 
     void handleSingleThread();
     void handleThreadPool();
 
 public:
-    typedef std::function<void(DataBuffer)> function_handler_typedef;
+    typedef std::function<void(DataBuffer_t)> function_handler_typedef;
     Client() noexcept;
     Client(ThreadPool* threadPool) noexcept;
     virtual ~Client() override;
 
-    status connectTo(uint32_t host, uint16_t port) noexcept;
-    virtual status disconnect() noexcept override;
+    SockStatusInfo_t connectTo(uint32_t host, uint16_t port) noexcept;
+    virtual SockStatusInfo_t Disconnect() noexcept override;
 
-    virtual uint32_t getHost() const override;
-    virtual uint16_t getPort() const override;
-    virtual status getStatus() const override {return client_status_;}
+    virtual uint32_t GetHost() const override;
+    virtual uint16_t GetPort() const override;
+    virtual SockStatusInfo_t GetStatus() const override {return client_status_;}
 
-    virtual DataBuffer loadData() override;
-    DataBuffer loadDataSync();
+    virtual DataBuffer_t LoadData() override;
+    DataBuffer_t loadDataSync();
     void setHandler(function_handler_typedef handler);
     void joinHandler() const;
 
-    virtual bool sendData(const void* buffer, const size_t size) const override;
-    virtual SocketType getType() const override { return SocketType::client_socket;}
+    virtual bool SendData(const void* buffer, const size_t size) const override;
+    virtual SocketType GetType() const override { return SocketType::Client;}
 
 };
 

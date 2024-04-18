@@ -12,21 +12,21 @@ std::string getHostStr(uint32_t ip, uint16_t port) {
 }
 void runClient(Client& client) {
     using namespace std::chrono_literals;
-    if (client.connectTo(LOCALHOST_IP, 8081) == SocketStatus::connected) {
+    if (client.connectTo(LOCALHOST_IP, 8081) == SocketStatusInfo::Connected) {
 #ifdef DEBUG
-        std::clog << "Client connected\n";
+        std::clog << "Client Connected\n";
 #endif
-        client.setHandler([&client](DataBuffer dataBuffer){
+        client.setHandler([&client](DataBuffer_t dataBuffer){
             std::this_thread::sleep_for(3s);
 #ifdef DEBUG
             std::clog << "Recived " << dataBuffer.size() << " bytes: " << (char *)dataBuffer.data() << '\n';
 #endif
             std::this_thread::sleep_for(1s);
-            client.sendData("Hello, server\0", sizeof("Hello, server\0"));
+            client.SendData("Hello, server\0", sizeof("Hello, server\0"));
         });
-        client.sendData("Hello, server\0", sizeof("Hello, server\0"));
+        client.SendData("Hello, server\0", sizeof("Hello, server\0"));
     } else {
-        std::cerr << "Client is not connected\n";
+        std::cerr << "Client is not Connected\n";
         std::exit(EXIT_FAILURE);
     }
 }
