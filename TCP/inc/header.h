@@ -41,7 +41,7 @@ typedef int SocketHandle_t;
 typedef int KeepAliveProperty_t;
 #endif
 
-constexpr uint32_t LOCALHOST_IP = 0x0100007f;
+constexpr uint32_t kLocalhostIP = 0x0100007f;
 
 enum class SocketStatusInfo : uint8_t {
     Connected       = 0,
@@ -55,25 +55,25 @@ enum class SocketStatusInfo : uint8_t {
 
 typedef std::vector<uint8_t> DataBuffer_t;
 
-enum class SocketType : uint8_t {
+enum class ConnectionType : uint8_t {
     Client = 0,
     Server = 1
 };
 
-class ThreadPool {
+class NetworkThreadPool {
 public:
 
-    void Start(uint32_t thread_count = HARDWARE_CONCURRENCY);
-    void Stop();
+    void StartThreads(uint32_t thread_count = HARDWARE_CONCURRENCY);
+    void StopThreads();
 
-    void Join();
+    void JoinThreads();
 
-    void RestartJob();
+    void ResetJob();
 
-    uint32_t GetThreadCount() const;
+    [[nodiscard]] uint32_t GetThreadCount() const;
 
     template<typename A>
-    void AddJob(A work) {
+    void AddTask(A work) {
         if(m_terminatePool_) {
             return;
         }
@@ -85,16 +85,16 @@ public:
     }
 
     template<typename A, typename ... Arg>
-    void AddJob(const A& work, const Arg&... args) {
-        AddJob([work, args...]{work(args...);});
+    void AddTask(const A& work, const Arg&... args) {
+        AddTask([work, args...]{work(args...);});
     }
 
-    ThreadPool(uint32_t thread_count = HARDWARE_CONCURRENCY) { SetupThreadPool(thread_count);};
-    ~ThreadPool();
+    explicit NetworkThreadPool(uint32_t thread_count = HARDWARE_CONCURRENCY) { ConfigureThreadPool(thread_count);};
+    ~NetworkThreadPool();
 
 private:
-    void SetupThreadPool(uint32_t thread_count);
-    void WorkerLoop();
+    void ConfigureThreadPool(uint32_t thread_count);
+    void ThreadWorkerLoop();
 
     std::vector<std::thread> m_threadPool_;
     std::queue<std::function<void()>> m_queueWork_;
@@ -122,26 +122,26 @@ namespace {
     };
 
     WSAData WindowsSocketInitializer::m_wsaData_;
-    static inline WindowsSocketInitializer winsockInitializer;
+    inline WindowsSocketInitializer winsockInitializer;
 }
 #endif
 
 class TCPInterfaceBase {
 public:
     typedef SocketStatusInfo SockStatusInfo_t;
-    virtual ~TCPInterfaceBase() {};
+    virtual ~TCPInterfaceBase() = default;
 
     virtual SockStatusInfo_t Disconnect() = 0;
-    virtual SockStatusInfo_t GetStatus() const = 0;
+    [[nodiscard]] virtual SockStatusInfo_t GetStatus() const = 0;
 
-    virtual bool SendData(const void* buffer,const size_t size) const = 0;
+    virtual bool SendData(const void* buffer,size_t size) const = 0;
 
     virtual DataBuffer_t LoadData() = 0;
 
-    virtual uint32_t GetHost() const = 0;
-    virtual uint16_t GetPort() const = 0;
+    [[nodiscard]] virtual uint32_t GetHost() const = 0;
+    [[nodiscard]] virtual uint16_t GetPort() const = 0;
 
-    virtual SocketType GetType() const = 0;
+    [[nodiscard]] virtual ConnectionType GetType() const = 0;
 };
 
 

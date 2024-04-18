@@ -12,16 +12,17 @@ std::string getHostStr(uint32_t ip, uint16_t port) {
 }
 void runClient(Client& client) {
     using namespace std::chrono_literals;
-    if (client.connectTo(LOCALHOST_IP, 8081) == SocketStatusInfo::Connected) {
-#ifdef DEBUG
+    if (!client.SetDataPc()) {
+        std::cerr << "Failed to set PC data\n";
+        return;
+    }
+    if (client.ConnectTo(kLocalhostIP, 8081) == SocketStatusInfo::Connected) {
         std::clog << "Client Connected\n";
-#endif
-        client.setHandler([&client](DataBuffer_t dataBuffer){
-            std::this_thread::sleep_for(3s);
-#ifdef DEBUG
+        client.SetHandler([&client](DataBuffer_t dataBuffer){
+            std::this_thread::sleep_for(10s);
             std::clog << "Recived " << dataBuffer.size() << " bytes: " << (char *)dataBuffer.data() << '\n';
-#endif
-            std::this_thread::sleep_for(1s);
+            client.GetDataPC();
+            std::this_thread::sleep_for(10s);
             client.SendData("Hello, server\0", sizeof("Hello, server\0"));
         });
         client.SendData("Hello, server\0", sizeof("Hello, server\0"));
@@ -34,13 +35,13 @@ void runClient(Client& client) {
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
-    ThreadPool threadPool;
+    NetworkThreadPool m_clientThreadPool;
 
 
-    Client firstClient(&threadPool);
-    Client secondClient(&threadPool);
-    Client thrirdClient(&threadPool);
-    Client fourthClient(&threadPool);
+    Client firstClient(&m_clientThreadPool);
+    Client secondClient(&m_clientThreadPool);
+    Client thrirdClient(&m_clientThreadPool);
+    Client fourthClient(&m_clientThreadPool);
 
 
     runClient(firstClient);
@@ -49,21 +50,21 @@ int main() {
     runClient(fourthClient);
 
 
-    firstClient.joinHandler();
+    firstClient.JoinHandler();
     std::cout << "firstClient" << std::endl;
 
 
 
-    secondClient.joinHandler();
+    secondClient.JoinHandler();
     std::cout << "secondClient" << std::endl;
 
 
 
-    thrirdClient.joinHandler();
+    thrirdClient.JoinHandler();
     std::cout << "thrirdClient" << std::endl;
 
 
-    fourthClient.joinHandler();
+    fourthClient.JoinHandler();
     std::cout << "fourthClient" << std::endl;
 
     return EXIT_SUCCESS;

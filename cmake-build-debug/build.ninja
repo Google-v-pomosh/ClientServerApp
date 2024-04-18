@@ -152,7 +152,7 @@ build TCP/rebuild_cache: phony TCP/CMakeFiles/rebuild_cache.util
 build cmake_object_order_depends_target_Client: phony || Client/CMakeFiles/Client.dir
 
 build Client/CMakeFiles/Client.dir/__/TCP/src/sourse.cpp.obj: CXX_COMPILER__Client_unscanned_Debug C$:/CLionProjects/SC/TCP/src/sourse.cpp || cmake_object_order_depends_target_Client
-  DEFINES = -DDEBUG
+  DEFINES = -DDEBUG -D_UNICODE
   DEP_FILE = Client\CMakeFiles\Client.dir\__\TCP\src\sourse.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
   INCLUDES = -IC:/CLionProjects/SC/Client/../TCP/inc -IC:/CLionProjects/SC/Client/../Client/TCP/inc
@@ -160,7 +160,7 @@ build Client/CMakeFiles/Client.dir/__/TCP/src/sourse.cpp.obj: CXX_COMPILER__Clie
   OBJECT_FILE_DIR = Client\CMakeFiles\Client.dir\__\TCP\src
 
 build Client/CMakeFiles/Client.dir/TCP/src/sourse.cpp.obj: CXX_COMPILER__Client_unscanned_Debug C$:/CLionProjects/SC/Client/TCP/src/sourse.cpp || cmake_object_order_depends_target_Client
-  DEFINES = -DDEBUG
+  DEFINES = -DDEBUG -D_UNICODE
   DEP_FILE = Client\CMakeFiles\Client.dir\TCP\src\sourse.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
   INCLUDES = -IC:/CLionProjects/SC/Client/../TCP/inc -IC:/CLionProjects/SC/Client/../Client/TCP/inc
@@ -168,7 +168,7 @@ build Client/CMakeFiles/Client.dir/TCP/src/sourse.cpp.obj: CXX_COMPILER__Client_
   OBJECT_FILE_DIR = Client\CMakeFiles\Client.dir\TCP\src
 
 build Client/CMakeFiles/Client.dir/main.cpp.obj: CXX_COMPILER__Client_unscanned_Debug C$:/CLionProjects/SC/Client/main.cpp || cmake_object_order_depends_target_Client
-  DEFINES = -DDEBUG
+  DEFINES = -DDEBUG -D_UNICODE
   DEP_FILE = Client\CMakeFiles\Client.dir\main.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
   INCLUDES = -IC:/CLionProjects/SC/Client/../TCP/inc -IC:/CLionProjects/SC/Client/../Client/TCP/inc
@@ -185,7 +185,7 @@ build Client/CMakeFiles/Client.dir/main.cpp.obj: CXX_COMPILER__Client_unscanned_
 
 build Client/Client.exe: CXX_EXECUTABLE_LINKER__Client_Debug Client/CMakeFiles/Client.dir/__/TCP/src/sourse.cpp.obj Client/CMakeFiles/Client.dir/TCP/src/sourse.cpp.obj Client/CMakeFiles/Client.dir/main.cpp.obj
   FLAGS = -g
-  LINK_LIBRARIES = -lwsock32  -lws2_32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_LIBRARIES = -lwsock32  -lws2_32  -liphlpapi  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = Client\CMakeFiles\Client.dir
   POST_BUILD = cd .
   PRE_LINK = cd .

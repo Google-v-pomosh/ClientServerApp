@@ -17,7 +17,7 @@ Server server(8081,
               [](DataBuffer_t dataBuffer, Server::InterfaceServerSession& client){
                     using namespace std::chrono_literals;
                     std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
-                    std::this_thread::sleep_for(1s);
+                    std::this_thread::sleep_for(10s);
                     client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
               },
               [](Server::InterfaceServerSession& client){
@@ -34,7 +34,7 @@ int main() {
     try {
         if (server.StartServer() == SocketStatusInfo::Connected){
             std::cout   << "Server listen on port: " << server.GetServerPort() << std::endl
-                        << "Server handling thread pool size: " << server.GetThreadPool().GetThreadCount() << std::endl;
+                        << "Server handling thread pool size: " << server.GetThreadExecutor().GetThreadCount() << std::endl;
             server.JoinLoop();
             return EXIT_SUCCESS;
         } else {

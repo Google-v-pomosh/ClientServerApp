@@ -1,8 +1,8 @@
 #include "../inc/header.h"
 
-#include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <utility>
 
 #ifdef _WIN32
 #define WIN(exp) exp
@@ -89,58 +89,67 @@ inline int convertError() {
 #endif
 
 Client::Client() noexcept
-    :   client_status_(SockStatusInfo_t::Disconnected)
-    {}
+        : m_statusClient_(SockStatusInfo_t::Disconnected),
+          m_addressClient_(),
+          m_socketClient_(INVALID_SOCKET),
+          m_threadManagmentType_(ThreadManagementType::SingleThread)
+{}
 
-Client::Client(ThreadPool *threadPool) noexcept
-    :   threadManagmentType(ThreadManagementType::ThreadPool),
-        threadClient(threadPool),
-        client_status_(SockStatusInfo_t::Disconnected)
-    {}
+
+Client::Client(NetworkThreadPool *client_thread_pool) noexcept
+        : m_threadManagmentType_(ThreadManagementType::ThreadPool),
+          m_threadClient(client_thread_pool),
+          m_statusClient_(SockStatusInfo_t::Disconnected),
+          m_addressClient_(),
+          m_socketClient_(INVALID_SOCKET)
+{}
+
 
 Client::~Client(){
     Disconnect();
     WIN(WSACleanup();)
-    switch (threadManagmentType) {
+    JoinThread();
+}
+
+void Client::JoinThread() {
+    switch (m_threadManagmentType_) {
         case Client::ThreadManagementType::SingleThread:
-            if (threadClient.thread) {
-                threadClient.thread->join();
+            if (m_threadClient.m_threadClient_) {
+                m_threadClient.m_threadClient_->join();
             }
-            delete threadClient.thread;
-        break;
+            delete m_threadClient.m_threadClient_;
+            break;
         case Client::ThreadManagementType::ThreadPool:
-        break;
+            break;
     }
 }
 
 Client::SockStatusInfo_t Client::Disconnect() noexcept {
-    if (client_status_ != SockStatusInfo_t::Connected){
-        return client_status_;
+    if (m_statusClient_ != SockStatusInfo_t::Connected){
+        return m_statusClient_;
     }
-    client_status_ = SockStatusInfo_t::Disconnected;
-    switch (threadManagmentType) {
+    m_statusClient_ = SockStatusInfo_t::Disconnected;
+    switch (m_threadManagmentType_) {
         case Client::ThreadManagementType::SingleThread:
-            if(threadClient.thread){
-                threadClient.thread->join();
+            if(m_threadClient.m_threadClient_){
+                m_threadClient.m_threadClient_->join();
             }
-            delete threadClient.thread;
+            delete m_threadClient.m_threadClient_;
         break;
         case Client::ThreadManagementType::ThreadPool:
         break;
     }
-    shutdown(client_socket_, SD_BOTH);
-    WINIX(closesocket(client_socket_), close(client_socket_));
-    return client_status_;
+    shutdown(m_socketClient_, SD_BOTH);
+    WINIX(closesocket(m_socketClient_), close(m_socketClient_));
+    return m_statusClient_;
 }
 
-void Client::handleSingleThread() {
+void Client::HandleSingleThread() {
     try {
-        while (client_status_ == SockStatusInfo_t::Connected) {
+        while (m_statusClient_ == SockStatusInfo_t::Connected) {
             if (DataBuffer_t dataBuffer = LoadData(); !dataBuffer.empty()) {
-                std::lock_guard lockGuard(handle_mutex_);
-                function_handler(std::move(dataBuffer));
-            } else if (client_status_ != SockStatusInfo_t::Connected) {
-                return;
+                std::lock_guard lockGuard(m_handleMutex_);
+                m_dataHandlerFunction(std::move(dataBuffer));
             }
         }
     } catch (std::exception& exception) {
@@ -149,14 +158,15 @@ void Client::handleSingleThread() {
     }
 }
 
-void Client::handleThreadPool() {
+
+void Client::HandleThreadPool() {
     try {
         if (DataBuffer_t dataBuffer = LoadData(); !dataBuffer.empty()) {
-            std::lock_guard lockGuard(handle_mutex_);
-            function_handler(std::move(dataBuffer));
+            std::lock_guard lockGuard(m_handleMutex_);
+            m_dataHandlerFunction(std::move(dataBuffer));
         }
-        if (client_status_ == SockStatusInfo_t::Connected) {
-            threadClient.threadPool->AddJob([this]{handleThreadPool();});
+        if (m_statusClient_ == SockStatusInfo_t::Connected) {
+            m_threadClient.m_threadPoolClient_->AddTask([this]{HandleThreadPool();});
         }
     } catch (std::exception& exception) {
         std::cerr << exception.what() << std::endl;
@@ -167,56 +177,54 @@ void Client::handleThreadPool() {
     }
 }
 
-TCPInterfaceBase::SockStatusInfo_t Client::connectTo(uint32_t host, uint16_t port) noexcept {
+TCPInterfaceBase::SockStatusInfo_t Client::ConnectTo(uint32_t host, uint16_t port) noexcept {
 
 #ifdef _WIN32
     WindowsSocketInitializer winsockInitializer;
-    /*if (WSAStartup(MAKEWORD(2, 2), &w_data) != 0)
-    {};*/
-    if ((client_socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
-        return  client_status_ = SockStatusInfo_t::InitError;
+    if ((m_socketClient_ = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
+        return  m_statusClient_ = SockStatusInfo_t::InitError;
     }
 #else
-    if ((client_socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
-        return  client_status_ = status::InitError;
+    if ((m_socketClient_ = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
+        return  m_statusClient_ = status::InitError;
     }
 #endif
-    new(&address_) SocketAddressIn_t;
-    address_.sin_family = AF_INET;
-    address_.sin_addr.s_addr = host;
+    new(&m_addressClient_) SocketAddressIn_t;
+    m_addressClient_.sin_family = AF_INET;
+    m_addressClient_.sin_addr.s_addr = host;
 
 #ifdef _WIN32
-    address_.sin_addr.S_un.S_addr = host;
+    m_addressClient_.sin_addr.S_un.S_addr = host;
 #else
-    address.sin_addr.s_addr = host;
+    m_addressClient_.sin_addr.s_addr = host;
 #endif
 
-    address_.sin_port = htons(port);
+    m_addressClient_.sin_port = htons(port);
 
-    if (connect(client_socket_, (sockaddr*)&address_, sizeof (address_)) WINIX(== SOCKET_ERROR,!= 0)) {
-        WIN(closesocket)NIX(close)(client_socket_);
-        return client_status_ = SockStatusInfo_t::ConnectError;
+    if (connect(m_socketClient_, (sockaddr*)&m_addressClient_, sizeof (m_addressClient_)) WINIX(== SOCKET_ERROR,!= 0)) {
+        WIN(closesocket)NIX(close)(m_socketClient_);
+        return m_statusClient_ = SockStatusInfo_t::ConnectError;
     }
-    return client_status_ = SockStatusInfo_t::Connected;
+    return m_statusClient_ = SockStatusInfo_t::Connected;
 }
 
 DataBuffer_t Client::LoadData() {
-    if (client_status_ != SocketStatusInfo::Connected) {
+    if (m_statusClient_ != SocketStatusInfo::Connected) {
         return DataBuffer_t();
     }
     DataBuffer_t dataBuffer;
     uint32_t size;
     int error = 0;
 #ifdef _WIN32
-    if (u_long t = true; SOCKET_ERROR == ioctlsocket(client_socket_, FIONBIO, &t)) {
+    if (u_long t = true; SOCKET_ERROR == ioctlsocket(m_socketClient_, FIONBIO, &t)) {
         return DataBuffer_t();
     }
-    int answer = recv(client_socket_, (char *)&size, sizeof(size), 0);
-    if (u_long t = false; SOCKET_ERROR == ioctlsocket(client_socket_, FIONBIO, &t)){
+    int answer = recv(m_socketClient_, (char *)&size, sizeof(size), 0);
+    if (u_long t = false; SOCKET_ERROR == ioctlsocket(m_socketClient_, FIONBIO, &t)){
         return DataBuffer_t();
     }
 #else
-    int answer = recv(client_socket_, (char *)&size, sizeof(size), MSG_DONTWAIT);
+    int answer = recv(m_socketClient_, (char *)&size, sizeof(size), MSG_DONTWAIT);
 #endif
     if (!answer) {
         Disconnect();
@@ -226,12 +234,12 @@ DataBuffer_t Client::LoadData() {
                 error = convertError();
                 if (!error) {
                     SocketLength_t length = sizeof (error);
-                    getsockopt(client_socket_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
+                    getsockopt(m_socketClient_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 }
         )
         NIX (
                 SocketLength_t length = sizeof (error);
-                getsockopt(client_socket_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
+                getsockopt(m_socketClient_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 if (!error) {
                     error = errno;
                 }
@@ -259,8 +267,14 @@ DataBuffer_t Client::LoadData() {
         return DataBuffer_t();
     }
 
-    dataBuffer.resize(size);
-    int recvResult = recv(client_socket_, reinterpret_cast<char*>(dataBuffer.data()), dataBuffer.size(), 0);
+    if (size > static_cast<uint32_t>(std::numeric_limits<int>::max())) {
+        std::cerr << "DataBuffer size exceeds maximum int value\n";
+        Disconnect();
+        return DataBuffer_t();
+    }
+
+    dataBuffer.resize(static_cast<size_t>(size));
+    int recvResult = recv(m_socketClient_, reinterpret_cast<char*>(dataBuffer.data()), static_cast<int>(dataBuffer.size()), 0);
     if (recvResult < 0) {
         int err = errno;
         std::cerr << "Error receiving data: " << std::strerror(err) << '\n';
@@ -271,58 +285,51 @@ DataBuffer_t Client::LoadData() {
     return dataBuffer;
 }
 
-DataBuffer_t Client::loadDataSync() {
+
+DataBuffer_t Client::LoadDataSync() const {
     DataBuffer_t dataBuffer;
     uint32_t size = 0;
-    int answer = recv(client_socket_, reinterpret_cast<char*>(&size), sizeof(size), 0);
+    int answer = recv(m_socketClient_, reinterpret_cast<char*>(&size), sizeof(size), 0);
     if(size && answer == sizeof(size)){
-        dataBuffer.resize(size);
-        recv(client_socket_, reinterpret_cast<char *>(dataBuffer.data()), dataBuffer.size(), 0);
+        if (size > static_cast<uint32_t>(std::numeric_limits<int>::max())) {
+            std::cerr << "DataBuffer size exceeds maximum int value\n";
+            return DataBuffer_t();
+        }
+        dataBuffer.resize(static_cast<size_t>(size));
+        recv(m_socketClient_, reinterpret_cast<char *>(dataBuffer.data()), static_cast<int>(dataBuffer.size()), 0);
     }
     return dataBuffer;
 }
 
-void Client::setHandler(Client::function_handler_typedef handler) {
+
+void Client::SetHandler(Client::DataHandleFunctionClient handler) {
     {
-        std::lock_guard lockGuard(handle_mutex_);
-        function_handler = handler;
+        std::lock_guard lockGuard(m_handleMutex_);
+        m_dataHandlerFunction = std::move(handler);
     }
-    switch (threadManagmentType) {
+    switch (m_threadManagmentType_) {
         case Client::ThreadManagementType::SingleThread:
-            if(threadClient.thread){
+            if(m_threadClient.m_threadClient_){
                 return;
             }
-            threadClient.thread = new std::thread(&Client::handleSingleThread, this);
+            m_threadClient.m_threadClient_ = new std::thread(&Client::HandleSingleThread, this);
         break;
         case Client::ThreadManagementType::ThreadPool:
-            threadClient.threadPool->AddJob([this]{handleThreadPool();});
+            m_threadClient.m_threadPoolClient_->AddTask([this]{HandleThreadPool();});
         break;
     }
 }
 
-/*void Client::joinHandler() {
-    switch (threadManagmentType) {
+void Client::JoinHandler() const {
+    switch (m_threadManagmentType_) {
         case Client::ThreadManagementType::SingleThread:
-            if (threadClient.thread){
-                threadClient.thread->join();
-            }
-        break;
-        case Client::ThreadManagementType::ThreadPool:
-            threadClient.threadPool->join();
-        break;
-    }
-}*/
-
-void Client::joinHandler() const {
-    switch (threadManagmentType) {
-        case Client::ThreadManagementType::SingleThread:
-            if (threadClient.thread) {
-                threadClient.thread->join();
+            if (m_threadClient.m_threadClient_) {
+                m_threadClient.m_threadClient_->join();
             }
             break;
         case Client::ThreadManagementType::ThreadPool:
-            if (threadClient.threadPool) {
-                threadClient.threadPool->Join();
+            if (m_threadClient.m_threadPoolClient_) {
+                m_threadClient.m_threadPoolClient_->JoinThreads();
             }
             break;
         default:
@@ -331,72 +338,108 @@ void Client::joinHandler() const {
     }
 }
 
-
-/*bool Client::sendData(const void *buffer, const size_t size) const {
-    void* sendBuffer = malloc(size + sizeof(int));
-    memcpy(reinterpret_cast<int*>(sendBuffer)+ sizeof(int), buffer, size);
-    *reinterpret_cast<int*>(sendBuffer) = size;
-    if (send(client_socket_, reinterpret_cast<char*>(sendBuffer), size + sizeof (int), 0) < 0 ) {
-        return false;
-    }
-    free(sendBuffer);
-    return true;
-}*/
-/*bool Client::sendData(const void *buffer, const size_t size) const {
-    // Выделяем буфер для отправки данных, включая место для хранения размера данных
-    void* sendBuffer = malloc(size + sizeof(int));
-    if (sendBuffer == nullptr) {
-        return false; // Ошибка при выделении памяти
-    }
-
-    // Записываем размер данных в начало буфера
-    int* sizePtr = reinterpret_cast<int*>(sendBuffer);
-    *sizePtr = static_cast<int>(size);
-
-    // Копируем данные в буфер отправки, начиная сразу после размера
-    memcpy(static_cast<char*>(sendBuffer) + sizeof(int), buffer, size);
-
-    // Отправляем данные
-    int bytesSent = send(client_socket_, reinterpret_cast<char*>(sendBuffer), size + sizeof(int), 0);
-    free(sendBuffer); // Освобождаем выделенную память
-
-    // Проверяем успешность отправки данных
-    if (bytesSent == SOCKET_ERROR || static_cast<size_t>(bytesSent) != size + sizeof(int)) {
-        return false; // Ошибка при отправке данных или не все данные были отправлены
-    }
-
-    return true; // Данные успешно отправлены
-}*/
 bool Client::SendData(const void *buffer, const size_t size) const {
-    std::vector<char> sendBuffer(size + sizeof(int));
+    size_t bufferSize = size + sizeof(int);
+    std::vector<char> sendBuffer(bufferSize);
     *reinterpret_cast<int*>(sendBuffer.data()) = static_cast<int>(size);
     memcpy(sendBuffer.data() + sizeof(int), buffer, size);
+
 #ifdef _WIN32
-    int bytesSent = send(client_socket_, sendBuffer.data(), size + sizeof(int), 0);
-    if (bytesSent == SOCKET_ERROR || static_cast<size_t>(bytesSent) != size + sizeof(int)) {
+    int bytesSent = send(m_socketClient_, sendBuffer.data(), static_cast<int>(bufferSize), 0);
+    if (bytesSent == SOCKET_ERROR || static_cast<size_t>(bytesSent) != bufferSize) {
         return false;
     }
 #else
-    ssize_t bytesSent = send(client_socket_, sendBuffer.data(), size + sizeof(int), 0);
-    if (bytesSent == -1 || static_cast<size_t>(bytesSent) != size + sizeof(int)) {
+    ssize_t bytesSent = send(m_socketClient_, sendBuffer.data(), bufferSize, 0);
+    if (bytesSent == -1 || static_cast<size_t>(bytesSent) != bufferSize) {
         return false;
     }
 #endif
+
     return true;
 }
+
+
 
 
 
 uint32_t Client::GetHost() const {
     return
             NIX(
-                    address_.sin_addr.s_addr
+                    m_addressClient_.sin_addr.s_addr
                     )
             WIN(
-                    address_.sin_addr.S_un.S_addr
+                    m_addressClient_.sin_addr.S_un.S_addr
                     );
 }
 
 uint16_t Client::GetPort() const {
-    return address_.sin_port;
+    return m_addressClient_.sin_port;
+}
+
+bool Client::SetDataPc() {
+    constexpr DWORD maxAdapterInfo = 16;
+    constexpr DWORD maxInfoBufSize = 32767;
+
+    // --- Domain ---
+    IP_ADAPTER_INFO AdapterInfo[maxAdapterInfo];
+    DWORD dwBufLen = sizeof(AdapterInfo);
+    DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
+    if (dwStatus != ERROR_SUCCESS) {
+        return false;
+    }
+    for (PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo; true; pAdapterInfo = pAdapterInfo->Next) {
+        std::string domain = pAdapterInfo->IpAddressList.IpAddress.String;
+        m_pcDataReqest_.SetDomain(domain);
+        break;
+    }
+
+    // --- Machine ---
+    TCHAR info_buf[maxInfoBufSize];
+    DWORD buf_char_count = maxInfoBufSize;
+    if (!GetComputerName(info_buf, &buf_char_count)) {
+        return false;
+    }
+    std::string machine = info_buf;
+    m_pcDataReqest_.SetMachine(machine);
+
+    // --- IP ---
+    for (PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo; true; pAdapterInfo = pAdapterInfo->Next) {
+        std::string ip = pAdapterInfo->IpAddressList.IpAddress.String;
+        m_pcDataReqest_.SetIp(ip);
+        break;
+    }
+
+    // --- User ---
+    buf_char_count = maxInfoBufSize;
+    if (!GetUserName(info_buf, &buf_char_count)) {
+        return false;
+    }
+    std::string user = info_buf;
+    m_pcDataReqest_.SetUser(user);
+
+    return true;
+}
+
+
+void Client::GetDataPC() {
+    if (!Client::SetDataPc())
+        return;
+
+    // Time
+    std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(lastRequestTime);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+
+    std::string timeStr(buft);
+
+    // WSend
+    std::string message =   "Client (domain: "   + m_pcDataReqest_.GetDomain()  + " " +
+                                    " machine: " + m_pcDataReqest_.GetMachine() + " " +
+                                    " Ip: "      + m_pcDataReqest_.GetIp()      + " " +
+                                    " User: "    + m_pcDataReqest_.GetUser()    + " " +
+                                    " Time: "    + timeStr                      + ")";
+    int messageSize = static_cast<int>(message.size());
+    send(m_socketClient_, message.c_str(), messageSize + 1, 0);
 }

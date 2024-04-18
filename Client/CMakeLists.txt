@@ -10,11 +10,14 @@ file(GLOB SOURCES   "main.cpp"
 
 add_executable(Client ${SOURCES})
 
+add_definitions(-D_UNICODE)
+
 if(WIN32)
-    target_link_libraries(Client wsock32 ws2_32)
+    target_link_libraries(Client wsock32 ws2_32 -liphlpapi)
 endif()
 
 target_include_directories(Client PRIVATE ../TCP/inc)
 target_include_directories(Client PRIVATE ../Client/TCP/inc)
+
 
 target_compile_definitions(Client PRIVATE DEBUG)

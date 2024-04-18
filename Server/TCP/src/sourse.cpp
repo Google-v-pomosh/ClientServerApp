@@ -88,17 +88,17 @@ inline int convertError() {
 /*WIN(WSAData WinSocket::w_data;)*/
 
 Server::Server(const uint16_t port,
-                     KeepAliveConfiguration keep_alive_config,
-                     DataHandleFunction handler,
+                     ServerKeepAliveConfig keep_alive_config,
+                     DataHandleFunctionServer handler,
                      ConnectionHandlerFunction connect_handle,
                      ConnectionHandlerFunction disconnect_handle,
                      uint32_t thread_count
 )
         : port_(port),
-          m_handler_(handler),
-          m_connectHandle_(connect_handle),
-          m_disconnectHandle_(disconnect_handle),
-          m_threadPool_(thread_count),
+          m_handler_(std::move(handler)),
+          m_connectHandle_(std::move(connect_handle)),
+          m_disconnectHandle_(std::move(disconnect_handle)),
+          m_threadPoolServer_(thread_count),
           m_keepAliveConfig_(keep_alive_config)
 {}
 
@@ -109,14 +109,14 @@ Server::~Server() {
 }
 
 void Server::StopServer() {
-    m_threadPool_.RestartJob();
+    m_threadPoolServer_.ResetJob();
     m_serverStatus_ = SocketStatusInfo::Disconnected;
     WIN(closesocket)NIX(close)(m_socketServer_);
     m_session_list_.clear();
 }
 
-void Server::SetServerHandler(Server::DataHandleFunction handler) {
-    this->m_handler_ = handler;
+void Server::SetServerDataHandler(Server::DataHandleFunctionServer handler) {
+    this->m_handler_ = std::move(handler);
 }
 
 uint16_t Server::SetServerPort(const uint16_t port) {
@@ -170,14 +170,14 @@ SocketStatusInfo Server::StartServer() {
     }
 
     m_serverStatus_ = SocketStatusInfo::Connected;
-    m_threadPool_.AddJob([this]{HandlingAcceptLoop();});
-    m_threadPool_.AddJob([this]{WaitingDataLoop();});
+    m_threadPoolServer_.AddTask([this]{HandlingAcceptLoop();});
+    m_threadPoolServer_.AddTask([this]{WaitingDataLoop();});
 
     return m_serverStatus_;
 }
 
 
-bool Server::ServerConnectTo(uint32_t host, uint16_t port, Server::ConnectionHandlerFunction connect_handle) {
+bool Server::ServerConnectTo(uint32_t host, uint16_t port, const Server::ConnectionHandlerFunction& connect_handle) {
     SocketHandle_t clientSocket;
     SocketAddressIn_t address;
 
@@ -301,7 +301,7 @@ void Server::HandlingAcceptLoop() {
     }
 #endif
     if(m_serverStatus_ == SocketStatusInfo::Connected) {
-        m_threadPool_.AddJob([this]() { HandlingAcceptLoop(); });
+        m_threadPoolServer_.AddTask([this]() { HandlingAcceptLoop(); });
     }
 }
 
@@ -326,7 +326,7 @@ bool Server::EnableKeepAlive(SocketHandle_t socket) {
                  nullptr,
                  0,
                  &numberBytesReturned,
-                 0,
+                 nullptr,
                  nullptr) != 0) {
         return false;
     }
@@ -354,13 +354,13 @@ void Server::WaitingDataLoop() {
             auto &client = *begin;
             if (client) {
                 if (DataBuffer_t dataBuffer = client->LoadData(); !dataBuffer.empty()) {
-                    m_threadPool_.AddJob([this, data = std::move(dataBuffer), &client] {
+                    m_threadPoolServer_.AddTask([this, data = std::move(dataBuffer), &client] {
                         client->m_accessMutex_.lock();
-                        m_handler_(std::move(data), *client);
+                        m_handler_(data, *client);
                         client->m_accessMutex_.unlock();
                     });
                 } else if (client->m_connectionStatus_ == SocketStatusInfo::Disconnected) {
-                    m_threadPool_.AddJob([this, &client, begin] {
+                    m_threadPoolServer_.AddTask([this, &client, begin] {
                         client->m_accessMutex_.lock();
                         InterfaceServerSession *pointer = client.release();
                         client = nullptr;
@@ -375,7 +375,7 @@ void Server::WaitingDataLoop() {
         }
     }
     if (m_serverStatus_ == SocketStatusInfo::Connected) {
-        m_threadPool_.AddJob([this](){WaitingDataLoop();});
+        m_threadPoolServer_.AddTask([this](){WaitingDataLoop();});
     }
 }
 
@@ -427,7 +427,7 @@ bool Server::InterfaceServerSession::SendData(const void *buffer, const size_t s
     void* sendBuffer = malloc(size + sizeof (uint32_t));
     memcpy(reinterpret_cast<char*>(sendBuffer) + sizeof (uint32_t ), buffer, size);
     *reinterpret_cast<uint32_t*>(sendBuffer) = size;
-    if(send(m_socketDescriptor_, reinterpret_cast<char*>(sendBuffer), size + sizeof (int), 0) < 0){
+    if(send(m_socketDescriptor_, reinterpret_cast<char*>(sendBuffer), static_cast<int>(size + sizeof(uint32_t)), 0) < 0){
         return false;
     }
     free(sendBuffer);
@@ -493,8 +493,8 @@ DataBuffer_t Server::InterfaceServerSession::LoadData() {
         return DataBuffer_t();
     }
 
-    dataBuffer.resize(size);
-    int recvResult = recv(m_socketDescriptor_, reinterpret_cast<char*>(dataBuffer.data()), dataBuffer.size(), 0);
+    dataBuffer.resize(static_cast<std::vector<DataBuffer_t>::size_type>(size));
+    int recvResult = recv(m_socketDescriptor_, reinterpret_cast<char*>(dataBuffer.data()), static_cast<int>(dataBuffer.size()), 0);
     if (recvResult < 0) {
         int err = errno;
         std::cerr << "Error receiving data: " << std::strerror(err) << '\n';
@@ -519,7 +519,7 @@ uint16_t Server::InterfaceServerSession::GetPort() const {
     return m_address_.sin_port;
 }
 
-KeepAliveConfiguration::KeepAliveConfiguration(KeepAliveProperty_t idle,
+ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
                                                KeepAliveProperty_t interval,
                                                KeepAliveProperty_t count
                                                )
