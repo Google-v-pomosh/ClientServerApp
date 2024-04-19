@@ -158,6 +158,9 @@
 		},
 		{
 			"path" : "Server/CMakeLists.txt"
+		},
+		{
+			"path" : "SQLite/CMakeLists.txt"
 		}
 	],
 	"kind" : "cmakeFiles",

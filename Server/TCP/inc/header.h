@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #endif
 
+#include "../../../SQLite/Windows/inc/sqlite3.h"
+/*#include <sqlite3.h>*/
 #include "../../../TCP/inc/header.h"
 
 class ServerKeepAliveConfig {

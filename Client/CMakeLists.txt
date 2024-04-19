@@ -10,8 +10,6 @@ file(GLOB SOURCES   "main.cpp"
 
 add_executable(Client ${SOURCES})
 
-add_definitions(-D_UNICODE)
-
 if(WIN32)
     target_link_libraries(Client wsock32 ws2_32 -liphlpapi)
 endif()

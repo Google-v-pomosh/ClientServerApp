@@ -15,9 +15,9 @@ std::string getHostStr(const Server::InterfaceServerSession& client)
 Server server(8081,
               {1, 1, 1},
               [](DataBuffer_t dataBuffer, Server::InterfaceServerSession& client){
-                    using namespace std::chrono_literals;
+                    /*using namespace std::chrono_literals;*/
                     std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
-                    std::this_thread::sleep_for(10s);
+                    /*std::this_thread::sleep_for(1s);*/
                     client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
               },
               [](Server::InterfaceServerSession& client){
@@ -29,8 +29,47 @@ Server server(8081,
               std::thread::hardware_concurrency()
               );
 
+void serverIOThread(Server &server) {
+    while (true) {
+        std::string command;
+        std::getline(std::cin, command);
+        if (command == "exit") {
+            server.StopServer();
+            break;
+        }
+    }
+}
+
 int main() {
-    std::cout << "Hello, World! fdsgdfg" << std::endl;
+
+    std::cout << "Hello, World! Server" << std::endl;
+
+    if (server.StartServer() == SocketStatusInfo::Connected) {
+        std::cout << "Server listening on port: " << server.GetServerPort() << '\n'
+                  << "Server handling thread pool size: " << server.GetThreadExecutor().GetThreadCount() << std::endl;
+
+        std::thread serverThread(serverIOThread, std::ref(server));
+
+        try {
+            server.JoinLoop();
+        } catch (const std::exception& e) {
+            std::cerr << "Exception: " << e.what() << std::endl;
+            server.StopServer();
+        }
+
+        serverThread.join();
+        return EXIT_SUCCESS;
+    } else {
+        std::cerr << "Failed to start server! Error code: " << static_cast<int>(server.GetServerStatus()) << std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+
+
+/*
+int main() {
+    std::cout << "Hello, World! Server" << std::endl;
     try {
         if (server.StartServer() == SocketStatusInfo::Connected){
             std::cout   << "Server listen on port: " << server.GetServerPort() << std::endl
@@ -45,4 +84,4 @@ int main() {
         std::cerr << exception.what();
         return EXIT_FAILURE;
     }
-}
+}*/

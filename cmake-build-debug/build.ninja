@@ -152,7 +152,7 @@ build TCP/rebuild_cache: phony TCP/CMakeFiles/rebuild_cache.util
 build cmake_object_order_depends_target_Client: phony || Client/CMakeFiles/Client.dir
 
 build Client/CMakeFiles/Client.dir/__/TCP/src/sourse.cpp.obj: CXX_COMPILER__Client_unscanned_Debug C$:/CLionProjects/SC/TCP/src/sourse.cpp || cmake_object_order_depends_target_Client
-  DEFINES = -DDEBUG -D_UNICODE
+  DEFINES = -DDEBUG
   DEP_FILE = Client\CMakeFiles\Client.dir\__\TCP\src\sourse.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
   INCLUDES = -IC:/CLionProjects/SC/Client/../TCP/inc -IC:/CLionProjects/SC/Client/../Client/TCP/inc
@@ -160,7 +160,7 @@ build Client/CMakeFiles/Client.dir/__/TCP/src/sourse.cpp.obj: CXX_COMPILER__Clie
   OBJECT_FILE_DIR = Client\CMakeFiles\Client.dir\__\TCP\src
 
 build Client/CMakeFiles/Client.dir/TCP/src/sourse.cpp.obj: CXX_COMPILER__Client_unscanned_Debug C$:/CLionProjects/SC/Client/TCP/src/sourse.cpp || cmake_object_order_depends_target_Client
-  DEFINES = -DDEBUG -D_UNICODE
+  DEFINES = -DDEBUG
   DEP_FILE = Client\CMakeFiles\Client.dir\TCP\src\sourse.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
   INCLUDES = -IC:/CLionProjects/SC/Client/../TCP/inc -IC:/CLionProjects/SC/Client/../Client/TCP/inc
@@ -168,7 +168,7 @@ build Client/CMakeFiles/Client.dir/TCP/src/sourse.cpp.obj: CXX_COMPILER__Client_
   OBJECT_FILE_DIR = Client\CMakeFiles\Client.dir\TCP\src
 
 build Client/CMakeFiles/Client.dir/main.cpp.obj: CXX_COMPILER__Client_unscanned_Debug C$:/CLionProjects/SC/Client/main.cpp || cmake_object_order_depends_target_Client
-  DEFINES = -DDEBUG -D_UNICODE
+  DEFINES = -DDEBUG
   DEP_FILE = Client\CMakeFiles\Client.dir\main.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
   INCLUDES = -IC:/CLionProjects/SC/Client/../TCP/inc -IC:/CLionProjects/SC/Client/../Client/TCP/inc
@@ -233,21 +233,21 @@ build cmake_object_order_depends_target_Server: phony || Server/CMakeFiles/Serve
 build Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.obj: CXX_COMPILER__Server_unscanned_Debug C$:/CLionProjects/SC/Server/TCP/src/sourse.cpp || cmake_object_order_depends_target_Server
   DEP_FILE = Server\CMakeFiles\Server.dir\TCP\src\sourse.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
-  INCLUDES = -IC:/CLionProjects/SC/Server/../TCP/inc -IC:/CLionProjects/SC/Server/../Server/TCP/inc
+  INCLUDES = -IC:/CLionProjects/SC/Server/../SQLite/Windows/inc -IC:/CLionProjects/SC/Server/../TCP/inc -IC:/CLionProjects/SC/Server/../Server/TCP/inc
   OBJECT_DIR = Server\CMakeFiles\Server.dir
   OBJECT_FILE_DIR = Server\CMakeFiles\Server.dir\TCP\src
 
 build Server/CMakeFiles/Server.dir/__/TCP/src/sourse.cpp.obj: CXX_COMPILER__Server_unscanned_Debug C$:/CLionProjects/SC/TCP/src/sourse.cpp || cmake_object_order_depends_target_Server
   DEP_FILE = Server\CMakeFiles\Server.dir\__\TCP\src\sourse.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
-  INCLUDES = -IC:/CLionProjects/SC/Server/../TCP/inc -IC:/CLionProjects/SC/Server/../Server/TCP/inc
+  INCLUDES = -IC:/CLionProjects/SC/Server/../SQLite/Windows/inc -IC:/CLionProjects/SC/Server/../TCP/inc -IC:/CLionProjects/SC/Server/../Server/TCP/inc
   OBJECT_DIR = Server\CMakeFiles\Server.dir
   OBJECT_FILE_DIR = Server\CMakeFiles\Server.dir\__\TCP\src
 
 build Server/CMakeFiles/Server.dir/main.cpp.obj: CXX_COMPILER__Server_unscanned_Debug C$:/CLionProjects/SC/Server/main.cpp || cmake_object_order_depends_target_Server
   DEP_FILE = Server\CMakeFiles\Server.dir\main.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
-  INCLUDES = -IC:/CLionProjects/SC/Server/../TCP/inc -IC:/CLionProjects/SC/Server/../Server/TCP/inc
+  INCLUDES = -IC:/CLionProjects/SC/Server/../SQLite/Windows/inc -IC:/CLionProjects/SC/Server/../TCP/inc -IC:/CLionProjects/SC/Server/../Server/TCP/inc
   OBJECT_DIR = Server\CMakeFiles\Server.dir
   OBJECT_FILE_DIR = Server\CMakeFiles\Server.dir
 
@@ -261,7 +261,8 @@ build Server/CMakeFiles/Server.dir/main.cpp.obj: CXX_COMPILER__Server_unscanned_
 
 build Server/Server.exe: CXX_EXECUTABLE_LINKER__Server_Debug Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.obj Server/CMakeFiles/Server.dir/__/TCP/src/sourse.cpp.obj Server/CMakeFiles/Server.dir/main.cpp.obj
   FLAGS = -g
-  LINK_LIBRARIES = -lwsock32  -lws2_32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_LIBRARIES = -lwsock32  -lws2_32  -lsqlite3  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_PATH = -LC:/CLionProjects/SC/Server/../SQLite/Windows/lib/x64
   OBJECT_DIR = Server\CMakeFiles\Server.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
@@ -293,17 +294,81 @@ build Server/CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
 build Server/rebuild_cache: phony Server/CMakeFiles/rebuild_cache.util
 
 # =============================================================================
+# Write statements declared in CMakeLists.txt:
+# C:/CLionProjects/SC/CMakeLists.txt
+# =============================================================================
+
+# =============================================================================
+# Object build statements for STATIC_LIBRARY target SQLite
+
+
+#############################################
+# Order-only phony target for SQLite
+
+build cmake_object_order_depends_target_SQLite: phony || SQLite/CMakeFiles/SQLite.dir
+
+build SQLite/CMakeFiles/SQLite.dir/main.c.obj: C_COMPILER__SQLite_unscanned_Debug C$:/CLionProjects/SC/SQLite/main.c || cmake_object_order_depends_target_SQLite
+  DEP_FILE = SQLite\CMakeFiles\SQLite.dir\main.c.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  INCLUDES = -IC:/CLionProjects/SC/SQLite/Windows/inc
+  OBJECT_DIR = SQLite\CMakeFiles\SQLite.dir
+  OBJECT_FILE_DIR = SQLite\CMakeFiles\SQLite.dir
+
+
+# =============================================================================
+# Link build statements for STATIC_LIBRARY target SQLite
+
+
+#############################################
+# Link the static library SQLite\libSQLite.a
+
+build SQLite/libSQLite.a: C_STATIC_LIBRARY_LINKER__SQLite_Debug SQLite/CMakeFiles/SQLite.dir/main.c.obj
+  LANGUAGE_COMPILE_FLAGS = -g
+  OBJECT_DIR = SQLite\CMakeFiles\SQLite.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = SQLite\libSQLite.a
+  TARGET_PDB = SQLite.a.dbg
+
+
+#############################################
+# Utility command for edit_cache
+
+build SQLite/CMakeFiles/edit_cache.util: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\CLionProjects\SC\cmake-build-debug\SQLite && "C:\Program Files\JetBrains\CLion 2023.3.4\bin\cmake\win\x64\bin\cmake.exe" -E echo "No interactive CMake dialog available.""
+  DESC = No interactive CMake dialog available...
+  restat = 1
+
+build SQLite/edit_cache: phony SQLite/CMakeFiles/edit_cache.util
+
+
+#############################################
+# Utility command for rebuild_cache
+
+build SQLite/CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\CLionProjects\SC\cmake-build-debug\SQLite && "C:\Program Files\JetBrains\CLion 2023.3.4\bin\cmake\win\x64\bin\cmake.exe" --regenerate-during-build -SC:\CLionProjects\SC -BC:\CLionProjects\SC\cmake-build-debug"
+  DESC = Running CMake to regenerate build system...
+  pool = console
+  restat = 1
+
+build SQLite/rebuild_cache: phony SQLite/CMakeFiles/rebuild_cache.util
+
+# =============================================================================
 # Target aliases.
 
 build Client: phony Client/Client.exe
 
 build Client.exe: phony Client/Client.exe
 
+build SQLite: phony SQLite/libSQLite.a
+
 build Server: phony Server/Server.exe
 
 build Server.exe: phony Server/Server.exe
 
 build TCP: phony TCP/libTCP.a
+
+build libSQLite.a: phony SQLite/libSQLite.a
 
 build libTCP.a: phony TCP/libTCP.a
 
@@ -315,7 +380,7 @@ build libTCP.a: phony TCP/libTCP.a
 #############################################
 # Folder: C:/CLionProjects/SC/cmake-build-debug
 
-build all: phony TCP/all Client/all Server/all
+build all: phony TCP/all Client/all Server/all SQLite/all
 
 # =============================================================================
 
@@ -323,6 +388,13 @@ build all: phony TCP/all Client/all Server/all
 # Folder: C:/CLionProjects/SC/cmake-build-debug/Client
 
 build Client/all: phony Client/Client.exe
+
+# =============================================================================
+
+#############################################
+# Folder: C:/CLionProjects/SC/cmake-build-debug/SQLite
+
+build SQLite/all: phony SQLite/libSQLite.a
 
 # =============================================================================
 
@@ -345,14 +417,14 @@ build TCP/all: phony TCP/libTCP.a
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | C$:/CLionProjects/SC/CMakeLists.txt C$:/CLionProjects/SC/Client/CMakeLists.txt C$:/CLionProjects/SC/Server/CMakeLists.txt C$:/CLionProjects/SC/TCP/CMakeLists.txt C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeRCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-C-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-Initialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/WindowsPaths.cmake CMakeCache.txt CMakeFiles/3.28.1/CMakeCCompiler.cmake CMakeFiles/3.28.1/CMakeCXXCompiler.cmake CMakeFiles/3.28.1/CMakeRCCompiler.cmake CMakeFiles/3.28.1/CMakeSystem.cmake
+build build.ninja: RERUN_CMAKE | C$:/CLionProjects/SC/CMakeLists.txt C$:/CLionProjects/SC/Client/CMakeLists.txt C$:/CLionProjects/SC/SQLite/CMakeLists.txt C$:/CLionProjects/SC/Server/CMakeLists.txt C$:/CLionProjects/SC/TCP/CMakeLists.txt C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeRCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-C-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-Initialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/WindowsPaths.cmake CMakeCache.txt CMakeFiles/3.28.1/CMakeCCompiler.cmake CMakeFiles/3.28.1/CMakeCXXCompiler.cmake CMakeFiles/3.28.1/CMakeRCCompiler.cmake CMakeFiles/3.28.1/CMakeSystem.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build C$:/CLionProjects/SC/CMakeLists.txt C$:/CLionProjects/SC/Client/CMakeLists.txt C$:/CLionProjects/SC/Server/CMakeLists.txt C$:/CLionProjects/SC/TCP/CMakeLists.txt C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeRCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-C-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-Initialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/WindowsPaths.cmake CMakeCache.txt CMakeFiles/3.28.1/CMakeCCompiler.cmake CMakeFiles/3.28.1/CMakeCXXCompiler.cmake CMakeFiles/3.28.1/CMakeRCCompiler.cmake CMakeFiles/3.28.1/CMakeSystem.cmake: phony
+build C$:/CLionProjects/SC/CMakeLists.txt C$:/CLionProjects/SC/Client/CMakeLists.txt C$:/CLionProjects/SC/SQLite/CMakeLists.txt C$:/CLionProjects/SC/Server/CMakeLists.txt C$:/CLionProjects/SC/TCP/CMakeLists.txt C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeRCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Compiler/GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-C-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-Initialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/Windows.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.3.4/bin/cmake/win/x64/share/cmake-3.28/Modules/Platform/WindowsPaths.cmake CMakeCache.txt CMakeFiles/3.28.1/CMakeCCompiler.cmake CMakeFiles/3.28.1/CMakeCXXCompiler.cmake CMakeFiles/3.28.1/CMakeRCCompiler.cmake CMakeFiles/3.28.1/CMakeSystem.cmake: phony
 
 
 #############################################

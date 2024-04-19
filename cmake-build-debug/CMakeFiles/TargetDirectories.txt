@@ -10,3 +10,6 @@ C:/CLionProjects/SC/cmake-build-debug/Client/CMakeFiles/rebuild_cache.dir
 C:/CLionProjects/SC/cmake-build-debug/Server/CMakeFiles/Server.dir
 C:/CLionProjects/SC/cmake-build-debug/Server/CMakeFiles/edit_cache.dir
 C:/CLionProjects/SC/cmake-build-debug/Server/CMakeFiles/rebuild_cache.dir
+C:/CLionProjects/SC/cmake-build-debug/SQLite/CMakeFiles/SQLite.dir
+C:/CLionProjects/SC/cmake-build-debug/SQLite/CMakeFiles/edit_cache.dir
+C:/CLionProjects/SC/cmake-build-debug/SQLite/CMakeFiles/rebuild_cache.dir

@@ -379,7 +379,7 @@ uint16_t Client::GetPort() const {
 
 bool Client::SetDataPc() {
     constexpr DWORD maxAdapterInfo = 16;
-    constexpr DWORD maxInfoBufSize = 32767;
+    constexpr DWORD maxInfoBufSize = 256;
 
     // --- Domain ---
     IP_ADAPTER_INFO AdapterInfo[maxAdapterInfo];
@@ -421,6 +421,50 @@ bool Client::SetDataPc() {
     return true;
 }
 
+/*bool Client::SetDataPc() {
+    constexpr DWORD maxAdapterInfo = 16;
+    constexpr DWORD maxInfoBufSize = 256;
+
+    // --- Domain ---
+    IP_ADAPTER_INFO AdapterInfo[maxAdapterInfo];
+    DWORD dwBufLen = sizeof(AdapterInfo);
+    DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
+    if (dwStatus != ERROR_SUCCESS) {
+        return false;
+    }
+    for (PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo; pAdapterInfo != nullptr; pAdapterInfo = pAdapterInfo->Next) {
+        std::string domain = pAdapterInfo->IpAddressList.IpAddress.String;
+        m_pcDataReqest_.SetDomain(domain);
+        break;
+    }
+
+    // --- Machine ---
+    TCHAR info_buf[maxInfoBufSize];
+    DWORD buf_char_count = maxInfoBufSize;
+    if (!GetComputerName(info_buf, &buf_char_count)) {
+        return false;
+    }
+    std::string machine = info_buf;
+    m_pcDataReqest_.SetMachine(machine);
+
+    // --- IP ---
+    if (AdapterInfo != nullptr) {
+        std::string ip = AdapterInfo->IpAddressList.IpAddress.String;
+        m_pcDataReqest_.SetIp(ip);
+    }
+
+    // --- User ---
+    buf_char_count = maxInfoBufSize;
+    if (!GetUserName(info_buf, &buf_char_count)) {
+        return false;
+    }
+    std::string user = info_buf;
+    m_pcDataReqest_.SetUser(user);
+
+    return true;
+}*/
+
+
 
 void Client::GetDataPC() {
     if (!Client::SetDataPc())
@@ -435,11 +479,11 @@ void Client::GetDataPC() {
     std::string timeStr(buft);
 
     // WSend
-    std::string message =   "Client (domain: "   + m_pcDataReqest_.GetDomain()  + " " +
-                                    " machine: " + m_pcDataReqest_.GetMachine() + " " +
-                                    " Ip: "      + m_pcDataReqest_.GetIp()      + " " +
-                                    " User: "    + m_pcDataReqest_.GetUser()    + " " +
-                                    " Time: "    + timeStr                      + ")";
+    std::string message =   "   (domain: "   + m_pcDataReqest_.GetDomain()  + " " +
+                            " machine: " + m_pcDataReqest_.GetMachine()  + " " +
+                            " Ip: "      + m_pcDataReqest_.GetIp()       + " " +
+                            " User: "    + m_pcDataReqest_.GetUser()     + " " +
+                            " Time: "    + timeStr                       + ")";
     int messageSize = static_cast<int>(message.size());
     send(m_socketClient_, message.c_str(), messageSize + 1, 0);
 }
