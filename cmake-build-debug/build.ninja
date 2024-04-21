@@ -230,6 +230,13 @@ build Client/rebuild_cache: phony Client/CMakeFiles/rebuild_cache.util
 
 build cmake_object_order_depends_target_Server: phony || Server/CMakeFiles/Server.dir
 
+build Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.obj: C_COMPILER__Server_unscanned_Debug C$:/CLionProjects/SC/SQLite/Windows/src/sqlite3.c || cmake_object_order_depends_target_Server
+  DEP_FILE = Server\CMakeFiles\Server.dir\__\SQLite\Windows\src\sqlite3.c.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  INCLUDES = -IC:/CLionProjects/SC/Server/../SQLite/Windows/inc -IC:/CLionProjects/SC/Server/../TCP/inc -IC:/CLionProjects/SC/Server/../Server/TCP/inc
+  OBJECT_DIR = Server\CMakeFiles\Server.dir
+  OBJECT_FILE_DIR = Server\CMakeFiles\Server.dir\__\SQLite\Windows\src
+
 build Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.obj: CXX_COMPILER__Server_unscanned_Debug C$:/CLionProjects/SC/Server/TCP/src/sourse.cpp || cmake_object_order_depends_target_Server
   DEP_FILE = Server\CMakeFiles\Server.dir\TCP\src\sourse.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
@@ -259,10 +266,9 @@ build Server/CMakeFiles/Server.dir/main.cpp.obj: CXX_COMPILER__Server_unscanned_
 #############################################
 # Link the executable Server\Server.exe
 
-build Server/Server.exe: CXX_EXECUTABLE_LINKER__Server_Debug Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.obj Server/CMakeFiles/Server.dir/__/TCP/src/sourse.cpp.obj Server/CMakeFiles/Server.dir/main.cpp.obj
+build Server/Server.exe: CXX_EXECUTABLE_LINKER__Server_Debug Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.obj Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.obj Server/CMakeFiles/Server.dir/__/TCP/src/sourse.cpp.obj Server/CMakeFiles/Server.dir/main.cpp.obj
   FLAGS = -g
-  LINK_LIBRARIES = -lwsock32  -lws2_32  -lsqlite3  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-  LINK_PATH = -LC:/CLionProjects/SC/Server/../SQLite/Windows/lib/x64
+  LINK_LIBRARIES = -lwsock32  -lws2_32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = Server\CMakeFiles\Server.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
@@ -299,7 +305,7 @@ build Server/rebuild_cache: phony Server/CMakeFiles/rebuild_cache.util
 # =============================================================================
 
 # =============================================================================
-# Object build statements for STATIC_LIBRARY target SQLite
+# Object build statements for EXECUTABLE target SQLite
 
 
 #############################################
@@ -307,8 +313,15 @@ build Server/rebuild_cache: phony Server/CMakeFiles/rebuild_cache.util
 
 build cmake_object_order_depends_target_SQLite: phony || SQLite/CMakeFiles/SQLite.dir
 
-build SQLite/CMakeFiles/SQLite.dir/main.c.obj: C_COMPILER__SQLite_unscanned_Debug C$:/CLionProjects/SC/SQLite/main.c || cmake_object_order_depends_target_SQLite
-  DEP_FILE = SQLite\CMakeFiles\SQLite.dir\main.c.obj.d
+build SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.obj: C_COMPILER__SQLite_unscanned_Debug C$:/CLionProjects/SC/SQLite/Windows/src/sqlite3.c || cmake_object_order_depends_target_SQLite
+  DEP_FILE = SQLite\CMakeFiles\SQLite.dir\Windows\src\sqlite3.c.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  INCLUDES = -IC:/CLionProjects/SC/SQLite/Windows/inc
+  OBJECT_DIR = SQLite\CMakeFiles\SQLite.dir
+  OBJECT_FILE_DIR = SQLite\CMakeFiles\SQLite.dir\Windows\src
+
+build SQLite/CMakeFiles/SQLite.dir/main.cpp.obj: CXX_COMPILER__SQLite_unscanned_Debug C$:/CLionProjects/SC/SQLite/main.cpp || cmake_object_order_depends_target_SQLite
+  DEP_FILE = SQLite\CMakeFiles\SQLite.dir\main.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
   INCLUDES = -IC:/CLionProjects/SC/SQLite/Windows/inc
   OBJECT_DIR = SQLite\CMakeFiles\SQLite.dir
@@ -316,19 +329,21 @@ build SQLite/CMakeFiles/SQLite.dir/main.c.obj: C_COMPILER__SQLite_unscanned_Debu
 
 
 # =============================================================================
-# Link build statements for STATIC_LIBRARY target SQLite
+# Link build statements for EXECUTABLE target SQLite
 
 
 #############################################
-# Link the static library SQLite\libSQLite.a
+# Link the executable SQLite\SQLite.exe
 
-build SQLite/libSQLite.a: C_STATIC_LIBRARY_LINKER__SQLite_Debug SQLite/CMakeFiles/SQLite.dir/main.c.obj
-  LANGUAGE_COMPILE_FLAGS = -g
+build SQLite/SQLite.exe: CXX_EXECUTABLE_LINKER__SQLite_Debug SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.obj SQLite/CMakeFiles/SQLite.dir/main.cpp.obj
+  FLAGS = -g
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = SQLite\CMakeFiles\SQLite.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
-  TARGET_FILE = SQLite\libSQLite.a
-  TARGET_PDB = SQLite.a.dbg
+  TARGET_FILE = SQLite\SQLite.exe
+  TARGET_IMPLIB = SQLite\libSQLite.dll.a
+  TARGET_PDB = SQLite.exe.dbg
 
 
 #############################################
@@ -360,15 +375,15 @@ build Client: phony Client/Client.exe
 
 build Client.exe: phony Client/Client.exe
 
-build SQLite: phony SQLite/libSQLite.a
+build SQLite: phony SQLite/SQLite.exe
+
+build SQLite.exe: phony SQLite/SQLite.exe
 
 build Server: phony Server/Server.exe
 
 build Server.exe: phony Server/Server.exe
 
 build TCP: phony TCP/libTCP.a
-
-build libSQLite.a: phony SQLite/libSQLite.a
 
 build libTCP.a: phony TCP/libTCP.a
 
@@ -394,7 +409,7 @@ build Client/all: phony Client/Client.exe
 #############################################
 # Folder: C:/CLionProjects/SC/cmake-build-debug/SQLite
 
-build SQLite/all: phony SQLite/libSQLite.a
+build SQLite/all: phony SQLite/SQLite.exe
 
 # =============================================================================
 

@@ -85,8 +85,6 @@ inline int convertError() {
 #define NIX(exp) exp
 #endif
 
-/*WIN(WSAData WinSocket::w_data;)*/
-
 Server::Server(const uint16_t port,
                      ServerKeepAliveConfig keep_alive_config,
                      DataHandleFunctionServer handler,
@@ -378,6 +376,47 @@ void Server::WaitingDataLoop() {
         m_threadPoolServer_.AddTask([this](){WaitingDataLoop();});
     }
 }
+
+/*bool Server::WriteToDataBase(const std::string &data) {
+    sqlite3 *db;
+
+    int rc = sqlite3_open("test.db", &db);
+
+    if (rc) {
+        std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    const char *sql_insert = "INSERT INTO TABLE_NAME (COLUMN_NAME) VALUES (?);";
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, sql_insert, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return false;
+    }
+
+    rc = sqlite3_bind_text(stmt, 1, data.c_str(), -1, SQLITE_STATIC);
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return false;
+    }
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        std::cerr << "SQL error: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return false;
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    return true;
+}*/
 
 
 Server::InterfaceServerSession::InterfaceServerSession(SocketHandle_t socket, SocketAddressIn_t address)

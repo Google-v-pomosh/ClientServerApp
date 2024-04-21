@@ -40,9 +40,23 @@ void serverIOThread(Server &server) {
     }
 }
 
+/*void DataHandlerToDataBase(const DataBuffer_t dataBuffer, Server::InterfaceServerSession &client) {
+    std::string strData(reinterpret_cast<const char*>(dataBuffer.data()), dataBuffer.size());
+
+    if (server.WriteToDataBase(strData)){
+        std::cout << "Data written to database successfully" << std::endl;
+    } else {
+        std::cerr << "Failed to write data to database" << std::endl;
+    }
+
+    client.SendData("Data recived and written to database", 32);
+}*/
+
 int main() {
 
     std::cout << "Hello, World! Server" << std::endl;
+
+    /*server.SetServerDataHandler(DataHandlerToDataBase);*/
 
     if (server.StartServer() == SocketStatusInfo::Connected) {
         std::cout << "Server listening on port: " << server.GetServerPort() << '\n'

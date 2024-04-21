@@ -52,29 +52,35 @@ class Server {
 public:
 
     class InterfaceServerSession : public TCPInterfaceBase {
-    public:
-        InterfaceServerSession(SocketHandle_t socket, SocketAddressIn_t address);
-        ~InterfaceServerSession() override;
-        [[nodiscard]] uint32_t GetHost() const override;
-        [[nodiscard]] uint16_t GetPort() const override;
-        [[nodiscard]] SockStatusInfo_t GetStatus() const override {return m_connectionStatus_;};
-        SockStatusInfo_t Disconnect() override;
+        public:
+            InterfaceServerSession(SocketHandle_t socket, SocketAddressIn_t address);
+            ~InterfaceServerSession() override;
+            [[nodiscard]] uint32_t GetHost() const override;
+            [[nodiscard]] uint16_t GetPort() const override;
+            [[nodiscard]] SockStatusInfo_t GetStatus() const override {return m_connectionStatus_;};
+            SockStatusInfo_t Disconnect() override;
 
-        DataBuffer_t LoadData() override;
-        bool SendData(const void* buffer, size_t size) const override;
-        [[nodiscard]] ConnectionType GetType() const override {return ConnectionType::Server;}
+            DataBuffer_t LoadData() override;
+            bool SendData(const void* buffer, size_t size) const override;
+            [[nodiscard]] ConnectionType GetType() const override {return ConnectionType::Server;}
+        private:
+            friend class Server;
 
-    private:
-        friend class Server;
-
-        std::mutex m_accessMutex_;
-        SocketAddressIn_t m_address_;
-        SocketHandle_t m_socketDescriptor_;
-        SockStatusInfo_t m_connectionStatus_ = SockStatusInfo_t::Connected;
+            std::mutex m_accessMutex_;
+            SocketAddressIn_t m_address_;
+            SocketHandle_t m_socketDescriptor_;
+            SockStatusInfo_t m_connectionStatus_ = SockStatusInfo_t::Connected;
 
     };
 
-    using DataHandleFunctionServer = std::function<void(DataBuffer_t , Server::InterfaceServerSession&)>;
+    class DataBase {
+        public:
+
+        private:
+
+    };
+
+    using DataHandleFunctionServer = std::function<void(DataBuffer_t, Server::InterfaceServerSession&)>;
     using ConnectionHandlerFunction = std::function<void(Server::InterfaceServerSession&)>;
 
     static constexpr auto kDefaultDataHandlerServer
@@ -113,6 +119,8 @@ public:
     bool ServerDisconnectBy(uint32_t host, uint16_t port);
     void ServerDisconnectAll();
 
+    /*void HandleConnectionWithTimer(InterfaceServerSession& client);
+    bool WriteToDataBase(const std::string &data);*/
 
 private:
     using ServerSessionIterator = std::list<std::unique_ptr<InterfaceServerSession>>::iterator;

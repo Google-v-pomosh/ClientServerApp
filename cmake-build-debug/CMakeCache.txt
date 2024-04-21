@@ -261,15 +261,6 @@ SQLite_IS_TOP_LEVEL:STATIC=OFF
 SQLite_SOURCE_DIR:STATIC=C:/CLionProjects/SC/SQLite
 
 //Value Computed by CMake
-SQLlite_BINARY_DIR:STATIC=C:/CLionProjects/SC/cmake-build-debug/SQLlite
-
-//Value Computed by CMake
-SQLlite_IS_TOP_LEVEL:STATIC=OFF
-
-//Value Computed by CMake
-SQLlite_SOURCE_DIR:STATIC=C:/CLionProjects/SC/SQLlite
-
-//Value Computed by CMake
 Server_BINARY_DIR:STATIC=C:/CLionProjects/SC/cmake-build-debug/Server
 
 //Value Computed by CMake

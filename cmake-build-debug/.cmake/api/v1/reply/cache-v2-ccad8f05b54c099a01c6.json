@@ -1342,42 +1342,6 @@
 			"value" : "C:/CLionProjects/SC/SQLite"
 		},
 		{
-			"name" : "SQLlite_BINARY_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "C:/CLionProjects/SC/cmake-build-debug/SQLlite"
-		},
-		{
-			"name" : "SQLlite_IS_TOP_LEVEL",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "OFF"
-		},
-		{
-			"name" : "SQLlite_SOURCE_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "C:/CLionProjects/SC/SQLlite"
-		},
-		{
 			"name" : "Server_BINARY_DIR",
 			"properties" : 
 			[

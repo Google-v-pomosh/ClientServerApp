@@ -48,7 +48,7 @@ void clientIOThread(Client& client) {
             running = false;
             client.Disconnect();
         } else if (input == "connect") {
-            auto status = client.ConnectTo(kLocalhostIP, 8081); // 127.0.0.1:8080
+            auto status = client.ConnectTo(kLocalhostIP, 8081); // 127.0.0.1:8081
             if (status == Client::SockStatusInfo_t::Connected) {
                 std::cout << "Connected to server." << std::endl;
             } else {
@@ -69,22 +69,22 @@ int main() {
     NetworkThreadPool m_clientThreadPool;
 
     Client firstClient(&m_clientThreadPool);
-    Client secondClient(&m_clientThreadPool);
+    /*Client secondClient(&m_clientThreadPool);
     Client thirdClient(&m_clientThreadPool);
-    Client fourthClient(&m_clientThreadPool);
+    Client fourthClient(&m_clientThreadPool);*/
 
 
     std::thread clientThread(clientIOThread, std::ref(firstClient));
 
     std::thread runThread1(runClient, std::ref(firstClient));
-    std::thread runThread2(runClient, std::ref(secondClient));
+    /*std::thread runThread2(runClient, std::ref(secondClient));
     std::thread runThread3(runClient, std::ref(thirdClient));
-    std::thread runThread4(runClient, std::ref(fourthClient));
+    std::thread runThread4(runClient, std::ref(fourthClient));*/
 
     runThread1.join();
-    runThread2.join();
+    /*runThread2.join();
     runThread3.join();
-    runThread4.join();
+    runThread4.join();*/
 
     clientThread.join();
 

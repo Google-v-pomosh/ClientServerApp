@@ -14,7 +14,6 @@
 		"commands" : 
 		[
 			"add_executable",
-			"target_link_directories",
 			"target_link_libraries",
 			"target_include_directories"
 		],
@@ -30,7 +29,7 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 8,
+				"line" : 11,
 				"parent" : 0
 			},
 			{
@@ -42,25 +41,19 @@
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 13,
-				"parent" : 0
-			},
-			{
-				"command" : 3,
-				"file" : 0,
-				"line" : 10,
-				"parent" : 0
-			},
-			{
-				"command" : 3,
-				"file" : 0,
 				"line" : 17,
 				"parent" : 0
 			},
 			{
-				"command" : 3,
+				"command" : 2,
 				"file" : 0,
 				"line" : 18,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 19,
 				"parent" : 0
 			}
 		]
@@ -77,15 +70,43 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 4,
+					"backtrace" : 3,
 					"path" : "C:/CLionProjects/SC/Server/../SQLite/Windows/inc"
 				},
 				{
-					"backtrace" : 5,
+					"backtrace" : 4,
 					"path" : "C:/CLionProjects/SC/Server/../TCP/inc"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 5,
+					"path" : "C:/CLionProjects/SC/Server/../Server/TCP/inc"
+				}
+			],
+			"language" : "C",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -fdiagnostics-color=always"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 3,
+					"path" : "C:/CLionProjects/SC/Server/../SQLite/Windows/inc"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "C:/CLionProjects/SC/Server/../TCP/inc"
+				},
+				{
+					"backtrace" : 5,
 					"path" : "C:/CLionProjects/SC/Server/../Server/TCP/inc"
 				}
 			],
@@ -100,9 +121,9 @@
 			},
 			"sourceIndexes" : 
 			[
-				0,
 				1,
-				2
+				2,
+				3
 			]
 		}
 	],
@@ -121,22 +142,12 @@
 			},
 			{
 				"backtrace" : 2,
-				"fragment" : "-LC:\\CLionProjects\\SC\\Server\\..\\SQLite\\Windows\\lib\\x64",
-				"role" : "libraryPath"
-			},
-			{
-				"backtrace" : 3,
 				"fragment" : "-lwsock32",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 3,
+				"backtrace" : 2,
 				"fragment" : "-lws2_32",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 3,
-				"fragment" : "-lsqlite3",
 				"role" : "libraries"
 			},
 			{
@@ -161,7 +172,8 @@
 			[
 				0,
 				1,
-				2
+				2,
+				3
 			]
 		}
 	],
@@ -170,18 +182,24 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
+			"path" : "SQLite/Windows/src/sqlite3.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
 			"path" : "Server/TCP/src/sourse.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 1,
-			"compileGroupIndex" : 0,
+			"compileGroupIndex" : 1,
 			"path" : "TCP/src/sourse.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 1,
-			"compileGroupIndex" : 0,
+			"compileGroupIndex" : 1,
 			"path" : "Server/main.cpp",
 			"sourceGroupIndex" : 0
 		}
