@@ -44,10 +44,10 @@ private:
         void SetIp(std::string ip) {ip_ = std::move(ip);};
         void SetUser(std::string user) {user_ = std::move(user);};
 
-        std::string GetDomain() {return domain_;};
-        std::string GetMachine() {return machine_;};
-        std::string GetIp(){return ip_;};
-        std::string GetUser(){return user_;};
+        [[nodiscard]] std::string GetDomain() const {return domain_;};
+        [[nodiscard]] std::string GetMachine() const {return machine_;};
+        [[nodiscard]] std::string GetIp() const {return ip_;};
+        [[nodiscard]] std::string GetUser() const {return user_;};
     private:
         std::string domain_;
         std::string machine_;
@@ -68,10 +68,13 @@ private:
     void HandleThreadPool();
     void JoinThread();
 
+
+    std::string username_;
+
 public:
     using DataHandleFunctionClient = std::function<void(DataBuffer_t)>;
-    Client() noexcept;
-    explicit Client(NetworkThreadPool* client_thread_pool) noexcept;
+    Client(std::string  username) noexcept;
+    explicit Client(NetworkThreadPool* client_thread_pool, std::string  username) noexcept;
     ~Client() override;
 
     SockStatusInfo_t ConnectTo(uint32_t host, uint16_t port) noexcept;
@@ -80,6 +83,7 @@ public:
     [[nodiscard]] uint32_t GetHost() const override;
     [[nodiscard]] uint16_t GetPort() const override;
     [[nodiscard]] SockStatusInfo_t GetStatus() const override {return m_statusClient_;}
+    [[nodiscard]] std::string GetUser() const {return m_pcDataReqest_.GetUser();};
 
     DataBuffer_t LoadData() override;
     [[nodiscard]] DataBuffer_t LoadDataSync() const;
@@ -87,12 +91,15 @@ public:
     void JoinHandler() const;
 
     bool SendData(const void* buffer, size_t size) const override;
+    bool SendAuthData() const;
+    std::string GeneratePassword() const ;
     [[nodiscard]] ConnectionType GetType() const override { return ConnectionType::Client;}
 
     PcDataReqest m_pcDataReqest_;
 
     bool SetDataPc();
     void GetDataPC();
+    bool SetUserName(std::string user);
 };
 
 #endif //ALL_HEADER_CLIENT_H

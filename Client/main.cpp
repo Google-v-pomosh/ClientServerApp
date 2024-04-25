@@ -11,18 +11,19 @@ std::string getHostStr(uint32_t ip, uint16_t port) {
             std::to_string(port);
 }
 void runClient(Client& client) {
-    /*using namespace std::chrono_literals;*/
     if (!client.SetDataPc()) {
         std::cerr << "Failed to set PC data\n";
         return;
     }
     if (client.ConnectTo(kLocalhostIP, 8081) == SocketStatusInfo::Connected) {
         std::clog << "Client Connected\n";
+        if (!client.SendAuthData()) {
+            std::cerr << "Failed to send auth data\n";
+            return;
+        }
+        //client.GetDataPC();
         client.SetHandler([&client](DataBuffer_t dataBuffer){
-            /*std::this_thread::sleep_for(1s);*/
             std::clog << "Recived " << dataBuffer.size() << " bytes: " << (char *)dataBuffer.data() << '\n';
-            client.GetDataPC();
-            /*std::this_thread::sleep_for(1s);*/
             client.SendData("Hello, server\0", sizeof("Hello, server\0"));
         });
         client.SendData("Hello, server\0", sizeof("Hello, server\0"));
@@ -68,17 +69,26 @@ int main() {
 
     NetworkThreadPool m_clientThreadPool;
 
-    Client firstClient(&m_clientThreadPool);
-    /*Client secondClient(&m_clientThreadPool);
-    Client thirdClient(&m_clientThreadPool);
-    Client fourthClient(&m_clientThreadPool);*/
-
-
-    std::thread clientThread(clientIOThread, std::ref(firstClient));
-
+    Client firstClient(&m_clientThreadPool, "Alex");
+    std::thread clientThread1(clientIOThread, std::ref(firstClient));
     std::thread runThread1(runClient, std::ref(firstClient));
-    /*std::thread runThread2(runClient, std::ref(secondClient));
+
+   /* std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    Client secondClient(&m_clientThreadPool, "Olga");
+    std::thread clientThread2(clientIOThread, std::ref(secondClient));
+    std::thread runThread2(runClient, std::ref(secondClient));
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    Client thirdClient(&m_clientThreadPool, "Kirill");
+    std::thread clientThread3(clientIOThread, std::ref(thirdClient));
     std::thread runThread3(runClient, std::ref(thirdClient));
+
+    std::this_thread::sleep_for(std::chrono::seconds(8));
+
+    Client fourthClient(&m_clientThreadPool, "Evgeniy");
+    std::thread clientThread4(clientIOThread, std::ref(fourthClient));
     std::thread runThread4(runClient, std::ref(fourthClient));*/
 
     runThread1.join();
@@ -86,7 +96,10 @@ int main() {
     runThread3.join();
     runThread4.join();*/
 
-    clientThread.join();
+    clientThread1.join();
+    /*clientThread2.join();
+    clientThread3.join();
+    clientThread4.join();*/
 
     /*Client firstClient(&m_clientThreadPool);
     Client secondClient(&m_clientThreadPool);

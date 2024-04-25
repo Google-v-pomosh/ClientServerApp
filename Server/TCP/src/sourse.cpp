@@ -221,7 +221,7 @@ bool Server::ServerConnectTo(uint32_t host, uint16_t port, const Server::Connect
     }
 #endif
 
-    std::unique_ptr<InterfaceServerSession> client(new InterfaceServerSession(clientSocket, address));
+    std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, address));
     connect_handle(*client);
 
     m_clientMutex_.lock();
@@ -232,14 +232,14 @@ bool Server::ServerConnectTo(uint32_t host, uint16_t port, const Server::Connect
 }
 
 void Server::ServerSendData(const void *buffer, const size_t size) {
-    for (std::unique_ptr<InterfaceServerSession>& client : m_session_list_) {
+    for (std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
         client ->SendData(buffer, size);
     }
 }
 
 bool Server::ServerSendDataBy(uint32_t host, uint16_t port, const void *buffer, const size_t size) {
     bool dataIsSended = false;
-    for(std::unique_ptr<InterfaceServerSession>& client : m_session_list_) {
+    for(std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
         if (client->GetHost() == host && client->GetPort() == port){
             client->SendData(buffer, size);
             dataIsSended = true;
@@ -250,7 +250,7 @@ bool Server::ServerSendDataBy(uint32_t host, uint16_t port, const void *buffer, 
 
 bool Server::ServerDisconnectBy(uint32_t host, uint16_t port) {
     bool clientIsDisconnected = false;
-    for(std::unique_ptr<InterfaceServerSession>& client : m_session_list_) {
+    for(std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
         if (client->GetHost() == host && client->GetPort() == port){
             client->Disconnect();
             clientIsDisconnected = true;
@@ -260,7 +260,7 @@ bool Server::ServerDisconnectBy(uint32_t host, uint16_t port) {
 }
 
 void Server::ServerDisconnectAll() {
-    for (std::unique_ptr<InterfaceServerSession>& client : m_session_list_) {
+    for (std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
         client->Disconnect();
     }
 }
@@ -274,7 +274,7 @@ void Server::HandlingAcceptLoop() {
     {
         if (EnableKeepAlive(clientSocket))
         {
-            std::unique_ptr<InterfaceServerSession> client(new InterfaceServerSession(clientSocket, clientAddr));
+            std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, clientAddr));
             m_connectHandle_(*client);
             m_clientMutex_.lock();
             m_session_list_.emplace_back(std::move(client));
@@ -289,6 +289,7 @@ void Server::HandlingAcceptLoop() {
         if(EnableKeepAlive(clientSocket)) {
             std::unique_ptr<Client> client(new Client(clientSocket, clientAddr));
             m_connectHandle_(*client);
+            AddClientToDatabase(*client);
             m_clientMutex_.lock();
             m_session_list_.emplace_back(std::move(client));
             m_clientMutex_.unlock();
@@ -360,7 +361,7 @@ void Server::WaitingDataLoop() {
                 } else if (client->m_connectionStatus_ == SocketStatusInfo::Disconnected) {
                     m_threadPoolServer_.AddTask([this, &client, begin] {
                         client->m_accessMutex_.lock();
-                        InterfaceServerSession *pointer = client.release();
+                        InterfaceClientSession *pointer = client.release();
                         client = nullptr;
                         pointer->m_accessMutex_.unlock();
                         m_disconnectHandle_(*pointer);
@@ -377,53 +378,15 @@ void Server::WaitingDataLoop() {
     }
 }
 
-/*bool Server::WriteToDataBase(const std::string &data) {
-    sqlite3 *db;
 
-    int rc = sqlite3_open("test.db", &db);
-
-    if (rc) {
-        std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
-        return false;
-    }
-
-    const char *sql_insert = "INSERT INTO TABLE_NAME (COLUMN_NAME) VALUES (?);";
-    sqlite3_stmt *stmt;
-    rc = sqlite3_prepare_v2(db, sql_insert, -1, &stmt, nullptr);
-    if (rc != SQLITE_OK) {
-        std::cerr << "SQL error: " << sqlite3_errmsg(db) << std::endl;
-        sqlite3_close(db);
-        return false;
-    }
-
-    rc = sqlite3_bind_text(stmt, 1, data.c_str(), -1, SQLITE_STATIC);
-    if (rc != SQLITE_OK) {
-        std::cerr << "SQL error: " << sqlite3_errmsg(db) << std::endl;
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return false;
-    }
-
-    rc = sqlite3_step(stmt);
-    if (rc != SQLITE_DONE) {
-        std::cerr << "SQL error: " << sqlite3_errmsg(db) << std::endl;
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return false;
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    return true;
-}*/
+Server::InterfaceClientSession::InterfaceClientSession(SocketHandle_t socket, SocketAddressIn_t address)
+        : m_address_(address), m_socketDescriptor_(socket){
+    SetFirstConnectionTime();
+}
 
 
-Server::InterfaceServerSession::InterfaceServerSession(SocketHandle_t socket, SocketAddressIn_t address)
-        : m_address_(address), m_socketDescriptor_(socket) {}
-
-
-Server::InterfaceServerSession::~InterfaceServerSession(){
+Server::InterfaceClientSession::~InterfaceClientSession(){
+    InterfaceClientSession::Disconnect();
 #ifdef _WIN32
     if(m_socketDescriptor_ == INVALID_SOCKET) {
         return;
@@ -439,7 +402,8 @@ Server::InterfaceServerSession::~InterfaceServerSession(){
 #endif
 }
 
-TCPInterfaceBase::SockStatusInfo_t Server::InterfaceServerSession::Disconnect() {
+TCPInterfaceBase::SockStatusInfo_t Server::InterfaceClientSession::Disconnect() {
+    SetLastDisconnectionTime();
     m_connectionStatus_ = SockStatusInfo_t::Disconnected;
 #ifdef _WIN32
     if (m_socketDescriptor_ == INVALID_SOCKET) {
@@ -456,10 +420,11 @@ TCPInterfaceBase::SockStatusInfo_t Server::InterfaceServerSession::Disconnect() 
     close(m_socketDescriptor_);
     m_socketDescriptor_ = -1;
 #endif
+    m_lastDisconnectionTime_ = std::chrono::system_clock::now();
     return m_connectionStatus_;
 }
 
-bool Server::InterfaceServerSession::SendData(const void *buffer, const size_t size) const {
+bool Server::InterfaceClientSession::SendData(const void *buffer, const size_t size) const {
     if(m_connectionStatus_ != SocketStatusInfo::Connected) {
         return false;
     }
@@ -473,7 +438,7 @@ bool Server::InterfaceServerSession::SendData(const void *buffer, const size_t s
     return true;
 }
 
-DataBuffer_t Server::InterfaceServerSession::LoadData() {
+DataBuffer_t Server::InterfaceClientSession::LoadData() {
     if (m_connectionStatus_ != SocketStatusInfo::Connected) {
         return DataBuffer_t();
     }
@@ -544,7 +509,7 @@ DataBuffer_t Server::InterfaceServerSession::LoadData() {
     return dataBuffer;
 }
 
-uint32_t Server::InterfaceServerSession::GetHost() const {
+uint32_t Server::InterfaceClientSession::GetHost() const {
     return
             WIN (
                     m_address_.sin_addr.S_un.S_addr
@@ -554,9 +519,72 @@ uint32_t Server::InterfaceServerSession::GetHost() const {
             );
 }
 
-uint16_t Server::InterfaceServerSession::GetPort() const {
+uint16_t Server::InterfaceClientSession::GetPort() const {
     return m_address_.sin_port;
 }
+
+void Server::InterfaceClientSession::ConnectionTimes(const Server::InterfaceClientSession &client) {
+    std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(lastRequestTime);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+
+    std::string timeStr(buft);
+
+    std::chrono::system_clock::time_point firstConnectionTime = client.GetFirstConnectionTime();
+    std::chrono::system_clock::time_point lastDisconnectionTime = client.GetLastDisconnectionTime();
+    std::chrono::duration<double> duration = lastDisconnectionTime - firstConnectionTime;
+
+    auto duration_seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+    auto hours = std::chrono::duration_cast<std::chrono::hours>(duration_seconds);
+    duration_seconds -= hours;
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration_seconds);
+    duration_seconds -= minutes;
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration_seconds);
+
+    std::cout   << "Today: " << timeStr
+                << " Connection Duration: "
+                << std::setfill('0') << std::setw(2) << hours.count() << ":"
+                << std::setfill('0') << std::setw(2) << minutes.count() << ":"
+                << std::setfill('0') << std::setw(2) << seconds.count()
+                << std::endl;
+}
+
+bool Server::InterfaceClientSession::FindNamePass(const DataBuffer_t &data, Server::InterfaceClientSession &client) {
+    std::string receivedMessageAll(data.begin(), data.end());
+    receivedMessageAll.erase(std::remove(receivedMessageAll.begin(), receivedMessageAll.end(), '\0'), receivedMessageAll.end());
+
+    /*if (receivedMessageAll.size() < 3) {
+        std::cerr << "Invalid message format" << std::endl;
+        return false;
+    }*/
+    std::string receivedMessage = receivedMessageAll.substr(0);
+
+    size_t colonPos = receivedMessage.find(':');
+    if (colonPos == std::string::npos){
+        /*std::cerr << "User don`t detected" << std::endl;*/
+        return false;
+    }
+    std::string username = receivedMessage.substr(0, colonPos);
+    std::string password = receivedMessage.substr(colonPos + 1);
+
+    std::lock_guard<std::mutex> lock(usersMutex);
+
+    auto it = users.find(username);
+    if(it == users.end()){
+        users.emplace(username, UserInfo(password));
+        std::cout << "User '" << username << "' registered" << std::endl;
+    }
+    else {
+        if (it->second.password == password) {
+            std::cout << "User '" << username << "' authenticated successfully" << std::endl;
+        } else {
+            std::cerr << "Authentication failed for user '" << username << "'" << std::endl;
+        }
+    }
+    return true;
+}
+
 
 ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
                                                KeepAliveProperty_t interval,
@@ -566,3 +594,4 @@ ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
                                                     interval_(interval),
                                                     count_(count)
                                                {}
+

@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iostream>
 #include <utility>
+#include <iomanip>
 
 #ifdef _WIN32
 #define WIN(exp) exp
@@ -88,20 +89,23 @@ inline int convertError() {
 #define WINIX(win_exp, nix_exp) nix_exp
 #endif
 
-Client::Client() noexcept
+Client::Client(std::string  username) noexcept
         : m_statusClient_(SockStatusInfo_t::Disconnected),
           m_addressClient_(),
           m_socketClient_(INVALID_SOCKET),
-          m_threadManagmentType_(ThreadManagementType::SingleThread)
+          m_threadManagmentType_(ThreadManagementType::SingleThread),
+
+          username_(std::move(username))
 {}
 
 
-Client::Client(NetworkThreadPool *client_thread_pool) noexcept
+Client::Client(NetworkThreadPool *client_thread_pool, std::string  username) noexcept
         : m_threadManagmentType_(ThreadManagementType::ThreadPool),
           m_threadClient(client_thread_pool),
           m_statusClient_(SockStatusInfo_t::Disconnected),
           m_addressClient_(),
-          m_socketClient_(INVALID_SOCKET)
+          m_socketClient_(INVALID_SOCKET),
+          username_(std::move(username))
 {}
 
 
@@ -411,58 +415,16 @@ bool Client::SetDataPc() {
     }
 
     // --- User ---
-    buf_char_count = maxInfoBufSize;
+    /*buf_char_count = maxInfoBufSize;
     if (!GetUserName(info_buf, &buf_char_count)) {
         return false;
     }
-    std::string user = info_buf;
+    std::string user = info_buf;*/
+    std::string user = username_;
     m_pcDataReqest_.SetUser(user);
 
     return true;
 }
-
-/*bool Client::SetDataPc() {
-    constexpr DWORD maxAdapterInfo = 16;
-    constexpr DWORD maxInfoBufSize = 256;
-
-    // --- Domain ---
-    IP_ADAPTER_INFO AdapterInfo[maxAdapterInfo];
-    DWORD dwBufLen = sizeof(AdapterInfo);
-    DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
-    if (dwStatus != ERROR_SUCCESS) {
-        return false;
-    }
-    for (PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo; pAdapterInfo != nullptr; pAdapterInfo = pAdapterInfo->Next) {
-        std::string domain = pAdapterInfo->IpAddressList.IpAddress.String;
-        m_pcDataReqest_.SetDomain(domain);
-        break;
-    }
-
-    // --- Machine ---
-    TCHAR info_buf[maxInfoBufSize];
-    DWORD buf_char_count = maxInfoBufSize;
-    if (!GetComputerName(info_buf, &buf_char_count)) {
-        return false;
-    }
-    std::string machine = info_buf;
-    m_pcDataReqest_.SetMachine(machine);
-
-    // --- IP ---
-    if (AdapterInfo != nullptr) {
-        std::string ip = AdapterInfo->IpAddressList.IpAddress.String;
-        m_pcDataReqest_.SetIp(ip);
-    }
-
-    // --- User ---
-    buf_char_count = maxInfoBufSize;
-    if (!GetUserName(info_buf, &buf_char_count)) {
-        return false;
-    }
-    std::string user = info_buf;
-    m_pcDataReqest_.SetUser(user);
-
-    return true;
-}*/
 
 
 
@@ -479,11 +441,60 @@ void Client::GetDataPC() {
     std::string timeStr(buft);
 
     // WSend
-    std::string message =   "   (domain: "   + m_pcDataReqest_.GetDomain()  + " " +
+    std::string message =   "    (User: "    + m_pcDataReqest_.GetUser()     + " " +
+                            " domain: "   + m_pcDataReqest_.GetDomain()  + " " +
                             " machine: " + m_pcDataReqest_.GetMachine()  + " " +
                             " Ip: "      + m_pcDataReqest_.GetIp()       + " " +
-                            " User: "    + m_pcDataReqest_.GetUser()     + " " +
                             " Time: "    + timeStr                       + ")";
     int messageSize = static_cast<int>(message.size());
     send(m_socketClient_, message.c_str(), messageSize + 1, 0);
+}
+
+bool Client::SetUserName(std::string user) {
+    m_pcDataReqest_.SetUser(std::move(user));
+    return true;
+}
+
+/*std::string Client::GeneratePassword() {
+    auto now = std::chrono::system_clock::now();
+    auto now_c = std::chrono::system_clock::to_time_t(now);
+
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&now_c), "%Y-%m-%d %H:%M:%S");
+    std::string timestamp = ss.str();
+
+    auto sha256 = [](const std::string& input) {
+        std::hash<std::string> hasher;
+        return hasher(input);
+    };
+
+    std::string password = std::to_string(sha256(timestamp));
+
+    return password;
+}*/
+
+std::string Client::GeneratePassword() const {
+    std::string username = m_pcDataReqest_.GetUser();
+    auto sha256 = [](const std::string& input) {
+        std::hash<std::string> hasher;
+        return hasher(input);
+    };
+
+    std::string password = std::to_string(sha256(username));
+
+    return password;
+}
+
+bool Client::SendAuthData() const {
+    std::string username = m_pcDataReqest_.GetUser();
+
+    std::string password = GeneratePassword();
+    std::string authData = username + ":" + password;
+
+    if (!SendData(authData.c_str(), authData.size())) {
+        std::cerr << "Failed to send authentication data to server\n";
+        return false;
+    }
+
+    return true;
 }

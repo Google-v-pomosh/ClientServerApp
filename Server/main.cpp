@@ -1,7 +1,7 @@
 #include <iostream>
 #include "../Server/TCP/inc/header.h"
 
-std::string getHostStr(const Server::InterfaceServerSession& client)
+std::string getHostStr(const Server::InterfaceClientSession& client)
 {
     uint32_t ip = client.GetHost();
     return  std::string() +
@@ -14,17 +14,17 @@ std::string getHostStr(const Server::InterfaceServerSession& client)
 
 Server server(8081,
               {1, 1, 1},
-              [](DataBuffer_t dataBuffer, Server::InterfaceServerSession& client){
-                    /*using namespace std::chrono_literals;*/
+              [](DataBuffer_t dataBuffer, Server::InterfaceClientSession& client){
                     std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
-                    /*std::this_thread::sleep_for(1s);*/
+                    client.FindNamePass(dataBuffer, client);
                     client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
               },
-              [](Server::InterfaceServerSession& client){
+              [](Server::InterfaceClientSession& client){
                     std::cout << "Client " << getHostStr(client) << " Connected\n";
               },
-              [](Server::InterfaceServerSession& client){
-                  std::cout << "Client " << getHostStr(client) << " disconnected\n";
+              [](Server::InterfaceClientSession& client){
+                    Server::InterfaceClientSession::ConnectionTimes(client);
+                    std::cout << "Client " << getHostStr(client) << " disconnected\n";
               },
               std::thread::hardware_concurrency()
               );
@@ -34,23 +34,12 @@ void serverIOThread(Server &server) {
         std::string command;
         std::getline(std::cin, command);
         if (command == "exit") {
-            server.StopServer();
+            server.ServerDisconnectAll();
             break;
+
         }
     }
 }
-
-/*void DataHandlerToDataBase(const DataBuffer_t dataBuffer, Server::InterfaceServerSession &client) {
-    std::string strData(reinterpret_cast<const char*>(dataBuffer.data()), dataBuffer.size());
-
-    if (server.WriteToDataBase(strData)){
-        std::cout << "Data written to database successfully" << std::endl;
-    } else {
-        std::cerr << "Failed to write data to database" << std::endl;
-    }
-
-    client.SendData("Data recived and written to database", 32);
-}*/
 
 int main() {
 

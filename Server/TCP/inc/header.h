@@ -5,12 +5,19 @@
 #include <cstring>
 
 #include <list>
+#include <map>
+#include <vector>
+#include <string>
 
 #include <chrono>
 
 #include <thread>
 #include <mutex>
 #include <shared_mutex>
+#include <utility>
+
+#include <iomanip>
+#include <iostream>
 
 #ifdef _WIN32 // Windows NT
 #include <WinSock2.h>
@@ -50,43 +57,59 @@ private:
 
 class Server {
 public:
+    class InterfaceClientSession : public TCPInterfaceBase {
+    public:
 
-    class InterfaceServerSession : public TCPInterfaceBase {
-        public:
-            InterfaceServerSession(SocketHandle_t socket, SocketAddressIn_t address);
-            ~InterfaceServerSession() override;
-            [[nodiscard]] uint32_t GetHost() const override;
-            [[nodiscard]] uint16_t GetPort() const override;
-            [[nodiscard]] SockStatusInfo_t GetStatus() const override {return m_connectionStatus_;};
-            SockStatusInfo_t Disconnect() override;
+        InterfaceClientSession(SocketHandle_t socket, SocketAddressIn_t address);
+        ~InterfaceClientSession() override;
 
-            DataBuffer_t LoadData() override;
-            bool SendData(const void* buffer, size_t size) const override;
-            [[nodiscard]] ConnectionType GetType() const override {return ConnectionType::Server;}
-        private:
-            friend class Server;
+        [[nodiscard]] uint32_t GetHost() const override;
+        [[nodiscard]] uint16_t GetPort() const override;
+        [[nodiscard]] SockStatusInfo_t GetStatus() const override {return m_connectionStatus_;};
 
-            std::mutex m_accessMutex_;
-            SocketAddressIn_t m_address_;
-            SocketHandle_t m_socketDescriptor_;
-            SockStatusInfo_t m_connectionStatus_ = SockStatusInfo_t::Connected;
+        SockStatusInfo_t Disconnect() override;
+
+        DataBuffer_t LoadData() override;
+        bool SendData(const void* buffer, size_t size) const override;
+        bool FindNamePass(const DataBuffer_t& data, Server::InterfaceClientSession& client);
+        [[nodiscard]] ConnectionType GetType() const override {return ConnectionType::Server;}
+
+        [[nodiscard]] std::chrono::system_clock::time_point GetFirstConnectionTime() const { return m_firstConnectionTime_; }
+        [[nodiscard]] std::chrono::system_clock::time_point GetLastDisconnectionTime() const { return m_lastDisconnectionTime_; }
+
+        static void ConnectionTimes(const InterfaceClientSession& client);
+
+    private:
+        friend class Server;
+        struct UserInfo {
+            std::string password;
+            explicit UserInfo(std::string pass) :  password(std::move(pass)) {}
+        };
+
+        std::unordered_map<std::string, UserInfo> users;
+        std::mutex usersMutex;
+
+        std::mutex m_accessMutex_;
+        SocketAddressIn_t m_address_;
+        SocketHandle_t m_socketDescriptor_;
+        SockStatusInfo_t m_connectionStatus_ = SockStatusInfo_t::Connected;
+
+        std::chrono::system_clock::time_point m_firstConnectionTime_;
+        std::chrono::system_clock::time_point m_lastDisconnectionTime_;
+
+
+        void SetFirstConnectionTime() { m_firstConnectionTime_ = std::chrono::system_clock::now(); }
+        void SetLastDisconnectionTime() { m_lastDisconnectionTime_ = std::chrono::system_clock::now(); }
 
     };
 
-    class DataBase {
-        public:
-
-        private:
-
-    };
-
-    using DataHandleFunctionServer = std::function<void(DataBuffer_t, Server::InterfaceServerSession&)>;
-    using ConnectionHandlerFunction = std::function<void(Server::InterfaceServerSession&)>;
+    using DataHandleFunctionServer = std::function<void(DataBuffer_t , InterfaceClientSession&)>;
+    using ConnectionHandlerFunction = std::function<void(InterfaceClientSession&)>;
 
     static constexpr auto kDefaultDataHandlerServer
-        = [](const DataBuffer_t&, Server::InterfaceServerSession&){};
+        = [](const DataBuffer_t&, InterfaceClientSession&){};
     static constexpr auto kDefaultConnectionHandlerServer
-        = [](Server::InterfaceServerSession&){};
+        = [](InterfaceClientSession&){};
 
     explicit Server(uint16_t port,
            ServerKeepAliveConfig keep_alive_config      = {},
@@ -119,12 +142,24 @@ public:
     bool ServerDisconnectBy(uint32_t host, uint16_t port);
     void ServerDisconnectAll();
 
-    /*void HandleConnectionWithTimer(InterfaceServerSession& client);
+    /*void HandleConnectionWithTimer(InterfaceClientSession& client);
     bool WriteToDataBase(const std::string &data);*/
 
 private:
-    using ServerSessionIterator = std::list<std::unique_ptr<InterfaceServerSession>>::iterator;
-    std::list<std::unique_ptr<InterfaceServerSession>> m_session_list_;
+
+    std::string getHostStr(const Server::InterfaceClientSession& client)
+    {
+        uint32_t ip = client.GetHost();
+        return  std::string() +
+                std::to_string(int(reinterpret_cast<char*>(&ip)[0])) + '.' +
+                std::to_string(int(reinterpret_cast<char*>(&ip)[1])) + '.' +
+                std::to_string(int(reinterpret_cast<char*>(&ip)[2])) + '.' +
+                std::to_string(int(reinterpret_cast<char*>(&ip)[3])) + '.' +
+                std::to_string(client.GetPort());
+    }
+
+    using ServerSessionIterator = std::list<std::unique_ptr<InterfaceClientSession>>::iterator;
+    std::list<std::unique_ptr<InterfaceClientSession>> m_session_list_;
 
     DataHandleFunctionServer m_handler_ = kDefaultDataHandlerServer;
     ConnectionHandlerFunction m_connectHandle_ = kDefaultConnectionHandlerServer;
@@ -142,6 +177,7 @@ private:
     bool EnableKeepAlive(SocketHandle_t socket);
     void HandlingAcceptLoop();
     void WaitingDataLoop();
+
 
 };
 
