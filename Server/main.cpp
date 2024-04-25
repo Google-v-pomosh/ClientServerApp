@@ -16,27 +16,30 @@ Server server(8081,
               {1, 1, 1},
               [](DataBuffer_t dataBuffer, Server::InterfaceClientSession& client){
                     std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
-                    client.FindNamePass(dataBuffer, client);
+                    client.FindNamePass(dataBuffer, client, server);
                     client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
               },
               [](Server::InterfaceClientSession& client){
                     std::cout << "Client " << getHostStr(client) << " Connected\n";
               },
               [](Server::InterfaceClientSession& client){
-                    Server::InterfaceClientSession::ConnectionTimes(client);
                     std::cout << "Client " << getHostStr(client) << " disconnected\n";
+                    Server::InterfaceClientSession::ConnectionTimes(client, server);
               },
               std::thread::hardware_concurrency()
               );
 
+std::atomic<bool> exitRequested(false);
+
 void serverIOThread(Server &server) {
-    while (true) {
+    while (!exitRequested) {
         std::string command;
         std::getline(std::cin, command);
         if (command == "exit") {
+            exitRequested = true;
             server.ServerDisconnectAll();
-            break;
-
+        } else if (command == "print") {
+            server.printAllUsersInfo();
         }
     }
 }

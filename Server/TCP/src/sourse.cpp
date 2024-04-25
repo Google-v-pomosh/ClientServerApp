@@ -523,7 +523,7 @@ uint16_t Server::InterfaceClientSession::GetPort() const {
     return m_address_.sin_port;
 }
 
-void Server::InterfaceClientSession::ConnectionTimes(const Server::InterfaceClientSession &client) {
+std::string Server::InterfaceClientSession::ConnectionTimes(const Server::InterfaceClientSession &client, Server& server) {
     std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();
     std::time_t t = std::chrono::system_clock::to_time_t(lastRequestTime);
     char buft[80];
@@ -533,31 +533,48 @@ void Server::InterfaceClientSession::ConnectionTimes(const Server::InterfaceClie
 
     std::chrono::system_clock::time_point firstConnectionTime = client.GetFirstConnectionTime();
     std::chrono::system_clock::time_point lastDisconnectionTime = client.GetLastDisconnectionTime();
-    std::chrono::duration<double> duration = lastDisconnectionTime - firstConnectionTime;
 
-    auto duration_seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
-    auto hours = std::chrono::duration_cast<std::chrono::hours>(duration_seconds);
-    duration_seconds -= hours;
-    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration_seconds);
-    duration_seconds -= minutes;
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration_seconds);
+    std::chrono::seconds duration = std::chrono::duration_cast<std::chrono::seconds>(lastDisconnectionTime - firstConnectionTime);
 
-    std::cout   << "Today: " << timeStr
-                << " Connection Duration: "
-                << std::setfill('0') << std::setw(2) << hours.count() << ":"
-                << std::setfill('0') << std::setw(2) << minutes.count() << ":"
-                << std::setfill('0') << std::setw(2) << seconds.count()
-                << std::endl;
+    auto hours = std::chrono::duration_cast<std::chrono::hours>(duration);
+    duration -= hours;
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
+    duration -= minutes;
+    auto seconds = duration;
+
+    std::ostringstream oss;
+    oss << "Today: " << timeStr
+        << " Connection Duration: "
+        << std::setfill('0') << std::setw(2) << hours.count() << ":"
+        << std::setfill('0') << std::setw(2) << minutes.count() << ":"
+        << std::setfill('0') << std::setw(2) << seconds.count();
+
+    std::string username = client.GetUserNameIn();
+    std::lock_guard<std::mutex> lock(server.usersMutex);
+    auto it = server.users.find(username);
+    if (it != server.users.end()) {
+        it->second.timeConnection_ = oss.str();
+    }
+
+    return oss.str();
 }
 
-bool Server::InterfaceClientSession::FindNamePass(const DataBuffer_t &data, Server::InterfaceClientSession &client) {
+
+
+bool Server::InterfaceClientSession::FindNamePass(const DataBuffer_t& data, Server::InterfaceClientSession& client, Server& server) {
+    std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(lastRequestTime);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d", std::localtime(&t));
+    std::string timeStr(buft);
+
+    uint16_t port = client.GetPort();
+
+    /*std::string totalTimeConnection = ConnectionTimes(client);*/
+
     std::string receivedMessageAll(data.begin(), data.end());
     receivedMessageAll.erase(std::remove(receivedMessageAll.begin(), receivedMessageAll.end(), '\0'), receivedMessageAll.end());
 
-    /*if (receivedMessageAll.size() < 3) {
-        std::cerr << "Invalid message format" << std::endl;
-        return false;
-    }*/
     std::string receivedMessage = receivedMessageAll.substr(0);
 
     size_t colonPos = receivedMessage.find(':');
@@ -566,17 +583,18 @@ bool Server::InterfaceClientSession::FindNamePass(const DataBuffer_t &data, Serv
         return false;
     }
     std::string username = receivedMessage.substr(0, colonPos);
+    client.username_ = username;
     std::string password = receivedMessage.substr(colonPos + 1);
 
-    std::lock_guard<std::mutex> lock(usersMutex);
+    std::lock_guard<std::mutex> lock(server.usersMutex);
 
-    auto it = users.find(username);
-    if(it == users.end()){
-        users.emplace(username, UserInfo(password));
+    auto it = server.users.find(username);
+    if(it == server.users.end()){
+        server.users.emplace(username, UserInfo(password,port, "", timeStr));
         std::cout << "User '" << username << "' registered" << std::endl;
     }
     else {
-        if (it->second.password == password) {
+        if (it->second.sessionPort_ == port) {
             std::cout << "User '" << username << "' authenticated successfully" << std::endl;
         } else {
             std::cerr << "Authentication failed for user '" << username << "'" << std::endl;
@@ -584,6 +602,7 @@ bool Server::InterfaceClientSession::FindNamePass(const DataBuffer_t &data, Serv
     }
     return true;
 }
+
 
 
 ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,

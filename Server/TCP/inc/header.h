@@ -6,6 +6,8 @@
 
 #include <list>
 #include <map>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 #include <string>
 
@@ -66,29 +68,22 @@ public:
         [[nodiscard]] uint32_t GetHost() const override;
         [[nodiscard]] uint16_t GetPort() const override;
         [[nodiscard]] SockStatusInfo_t GetStatus() const override {return m_connectionStatus_;};
+        [[nodiscard]] std::string GetUserNameIn() const {return username_;};
 
         SockStatusInfo_t Disconnect() override;
 
         DataBuffer_t LoadData() override;
         bool SendData(const void* buffer, size_t size) const override;
-        bool FindNamePass(const DataBuffer_t& data, Server::InterfaceClientSession& client);
+        bool FindNamePass(const DataBuffer_t& data, Server::InterfaceClientSession& client, Server& server);
         [[nodiscard]] ConnectionType GetType() const override {return ConnectionType::Server;}
 
         [[nodiscard]] std::chrono::system_clock::time_point GetFirstConnectionTime() const { return m_firstConnectionTime_; }
         [[nodiscard]] std::chrono::system_clock::time_point GetLastDisconnectionTime() const { return m_lastDisconnectionTime_; }
 
-        static void ConnectionTimes(const InterfaceClientSession& client);
+        static std::string ConnectionTimes(const InterfaceClientSession& client, Server& server);
 
     private:
         friend class Server;
-        struct UserInfo {
-            std::string password;
-            explicit UserInfo(std::string pass) :  password(std::move(pass)) {}
-        };
-
-        std::unordered_map<std::string, UserInfo> users;
-        std::mutex usersMutex;
-
         std::mutex m_accessMutex_;
         SocketAddressIn_t m_address_;
         SocketHandle_t m_socketDescriptor_;
@@ -101,7 +96,63 @@ public:
         void SetFirstConnectionTime() { m_firstConnectionTime_ = std::chrono::system_clock::now(); }
         void SetLastDisconnectionTime() { m_lastDisconnectionTime_ = std::chrono::system_clock::now(); }
 
+        std::string username_;
+
     };
+
+    struct UserInfo {
+        std::string password_;
+        uint16_t sessionPort_;
+        std::string timeConnection_;
+        std::string timeToday_;
+
+        explicit UserInfo(std::string pass,
+                          uint16_t port,
+                          std::string timeConnection,
+                          std::string timeToday)
+                : password_(std::move(pass)),
+                  sessionPort_(port),
+                  timeConnection_(std::move(timeConnection)),
+                  timeToday_(std::move(timeToday)) {}
+    };
+
+    void printUserInfo(const UserInfo& userInfo) {
+        std::cout << "Password: " << userInfo.password_ << std::endl;
+        std::cout << "Session Port: " << userInfo.sessionPort_ << std::endl;
+        std::cout << userInfo.timeConnection_ << std::endl;
+        std::cout << "Time Today: " << userInfo.timeToday_ << std::endl;
+    }
+
+    void printAllUsersInfo() {
+        std::lock_guard<std::mutex> lock(usersMutex);
+        for (const auto& pair : users) {
+            std::cout << "Username: " << pair.first << std::endl;
+            std::cout << "User Info:" << std::endl;
+            printUserInfo(pair.second);
+            std::cout << std::endl;
+        }
+    }
+
+    /*static void AddUser(const std::string& username, const UserInfo& user) {
+        std::lock_guard<std::mutex> lock(usersMutex);
+        users[username] = user;
+    }
+
+    static void RemoveUser(const std::string& username){
+        std::lock_guard<std::mutex> lock(usersMutex);
+        users.erase(username);
+    }
+
+    static bool FindUser(const std::string& username, UserInfo& user) {
+        std::lock_guard<std::mutex> lock(usersMutex);
+        auto it = users.find(username);
+        if (it != users.end()) {
+            user = it->second;
+            return true;
+        }
+        return false;
+    }*/
+
 
     using DataHandleFunctionServer = std::function<void(DataBuffer_t , InterfaceClientSession&)>;
     using ConnectionHandlerFunction = std::function<void(InterfaceClientSession&)>;
@@ -146,6 +197,8 @@ public:
     bool WriteToDataBase(const std::string &data);*/
 
 private:
+    std::unordered_map<std::string, UserInfo> users;
+    std::mutex usersMutex;
 
     std::string getHostStr(const Server::InterfaceClientSession& client)
     {
