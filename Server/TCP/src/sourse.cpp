@@ -291,9 +291,8 @@ void Server::HandlingAcceptLoop() {
 #else
     if (SocketHandle_t clientSocket = accept4(m_socketServer_, (struct sockaddr*)&clientAddr, &addrLen, SOCK_NONBLOCK); clientSocket >= 0 && m_serverStatus_ == SocketStatusInfo::Connected) {
         if(EnableKeepAlive(clientSocket)) {
-            std::unique_ptr<Client> client(new Client(clientSocket, clientAddr));
+            std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, clientAddr));
             m_connectHandle_(*client);
-            AddClientToDatabase(*client);
             m_clientMutex_.lock();
             m_session_list_.emplace_back(std::move(client));
             m_clientMutex_.unlock();
@@ -334,16 +333,34 @@ bool Server::EnableKeepAlive(SocketHandle_t socket) {
         return false;
     }
 #else
-    if(setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) == -1) {
+    KeepAliveProperty_t idle = m_keepAliveConfig_.GetIdle();
+    KeepAliveProperty_t interval = m_keepAliveConfig_.GetInterval();
+    KeepAliveProperty_t count = m_keepAliveConfig_.GetCount();
+
+    if(setsockopt(socket,
+                  IPPROTO_TCP,
+                  TCP_KEEPIDLE,
+                  &idle,
+                  sizeof(KeepAliveProperty_t)) == -1)
+    {
         return false;
     }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, &m_keepAliveConfig_.ka_idle, sizeof(m_keepAliveConfig_.ka_idle)) == -1) {
+
+    if(setsockopt(socket,
+                  IPPROTO_TCP,
+                  TCP_KEEPINTVL,
+                  &interval,
+                  sizeof(KeepAliveProperty_t)) == -1)
+    {
         return false;
     }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL, &m_keepAliveConfig_.ka_intvl, sizeof(m_keepAliveConfig_.ka_intvl)) == -1) {
-        return false;
-    }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPCNT, &m_keepAliveConfig_.ka_cnt, sizeof(m_keepAliveConfig_.ka_cnt)) == -1) {
+
+    if(setsockopt(socket,
+                  IPPROTO_TCP,
+                  TCP_KEEPCNT,
+                  &count,
+                  sizeof(KeepAliveProperty_t)) == -1)
+    {
         return false;
     }
 #endif

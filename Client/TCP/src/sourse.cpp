@@ -4,6 +4,7 @@
 #include <iostream>
 #include <utility>
 #include <iomanip>
+#include <ifaddrs.h>
 
 #ifdef _WIN32
 #define WIN(exp) exp
@@ -92,7 +93,7 @@ inline int convertError() {
 Client::Client(std::string  username) noexcept
         : m_statusClient_(SockStatusInfo_t::Disconnected),
           m_addressClient_(),
-          m_socketClient_(INVALID_SOCKET),
+          m_socketClient_(SOCKET_INVALID),
           m_threadManagmentType_(ThreadManagementType::SingleThread),
 
           username_(std::move(username))
@@ -104,7 +105,7 @@ Client::Client(NetworkThreadPool *client_thread_pool, std::string  username) noe
           m_threadClient(client_thread_pool),
           m_statusClient_(SockStatusInfo_t::Disconnected),
           m_addressClient_(),
-          m_socketClient_(INVALID_SOCKET),
+          m_socketClient_(SOCKET_INVALID),
           username_(std::move(username))
 {}
 
@@ -190,7 +191,7 @@ TCPInterfaceBase::SockStatusInfo_t Client::ConnectTo(uint32_t host, uint16_t por
     }
 #else
     if ((m_socketClient_ = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
-        return  m_statusClient_ = status::InitError;
+        return  m_statusClient_ = SockStatusInfo_t::InitError;
     }
 #endif
     new(&m_addressClient_) SocketAddressIn_t;
@@ -381,7 +382,7 @@ uint16_t Client::GetPort() const {
     return m_addressClient_.sin_port;
 }
 
-bool Client::SetDataPc() {
+/*bool Client::SetDataPc() {
     constexpr DWORD maxAdapterInfo = 16;
     constexpr DWORD maxInfoBufSize = 256;
 
@@ -415,11 +416,94 @@ bool Client::SetDataPc() {
     }
 
     // --- User ---
-    /*buf_char_count = maxInfoBufSize;
+    *//*buf_char_count = maxInfoBufSize;
     if (!GetUserName(info_buf, &buf_char_count)) {
         return false;
     }
-    std::string user = info_buf;*/
+    std::string user = info_buf;*//*
+    std::string user = username_;
+    m_pcDataReqest_.SetUser(user);
+
+    return true;
+}*/
+
+bool Client::SetDataPc() {
+    // --- Domain ---
+    std::string domain;
+#ifdef _WIN32 // Для Windows
+    constexpr DWORD maxAdapterInfo = 16;
+    IP_ADAPTER_INFO AdapterInfo[maxAdapterInfo];
+    DWORD dwBufLen = sizeof(AdapterInfo);
+    DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
+    if (dwStatus == ERROR_SUCCESS) {
+        for (PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo; pAdapterInfo != nullptr; pAdapterInfo = pAdapterInfo->Next) {
+            domain = pAdapterInfo->IpAddressList.IpAddress.String;
+            break;
+        }
+    }
+#else // Для Ubuntu и других Unix-подобных систем
+    struct ifaddrs *ifaddr, *ifa;
+    if (getifaddrs(&ifaddr) == -1) {
+        return false;
+    }
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr || ifa->ifa_addr->sa_family != AF_INET) {
+            continue;
+        }
+        char addr_buf[INET_ADDRSTRLEN];
+        if (inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, addr_buf, sizeof(addr_buf)) != nullptr) {
+            domain = addr_buf;
+            break;
+        }
+    }
+    freeifaddrs(ifaddr);
+#endif
+    m_pcDataReqest_.SetDomain(domain);
+
+    // --- Machine ---
+    std::string machine;
+#ifdef _WIN32 // Для Windows
+    TCHAR info_buf[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD buf_char_count = MAX_COMPUTERNAME_LENGTH + 1;
+    if (GetComputerName(info_buf, &buf_char_count)) {
+        machine = info_buf;
+    }
+#else // Для Ubuntu и других Unix-подобных систем
+    struct utsname buf;
+    if (uname(&buf) != -1) {
+        machine = buf.nodename;
+    }
+#endif
+    m_pcDataReqest_.SetMachine(machine);
+
+    // --- IP ---
+    std::string ip;
+#ifdef _WIN32 // Для Windows
+    if (dwStatus == ERROR_SUCCESS) {
+        for (PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo; pAdapterInfo != nullptr; pAdapterInfo = pAdapterInfo->Next) {
+            ip = pAdapterInfo->IpAddressList.IpAddress.String;
+            break;
+        }
+    }
+#else // Для Ubuntu и других Unix-подобных систем
+    if (getifaddrs(&ifaddr) == -1) {
+        return false;
+    }
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr || ifa->ifa_addr->sa_family != AF_INET) {
+            continue;
+        }
+        char addr_buf[INET_ADDRSTRLEN];
+        if (inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, addr_buf, sizeof(addr_buf)) != nullptr) {
+            ip = addr_buf;
+            break;
+        }
+    }
+    freeifaddrs(ifaddr);
+#endif
+    m_pcDataReqest_.SetIp(ip);
+
+    // --- User ---
     std::string user = username_;
     m_pcDataReqest_.SetUser(user);
 

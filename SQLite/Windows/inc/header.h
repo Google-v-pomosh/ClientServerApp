@@ -4,8 +4,11 @@
 #include "sqlite3.h"
 #include <iostream>
 #include <string>
-
+#ifdef _WIN32
 #define DB_PATH "C:/CLionProjects/SC/cmake-build-debug/Server/example.db"
+#else
+#endif
+#define DB_PATH "/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server/example.db"
 
 class DatabaseHandler {
 public:

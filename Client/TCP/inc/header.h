@@ -8,14 +8,18 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <Windows.h>
+#include <iphlpapi.h>
+#define SOCKET_INVALID INVALID_SOCKET
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <sys/utsname.h>
+#define SOCKET_INVALID (-1)
 #endif
-#include <iphlpapi.h>
+
 #include "../../../TCP/inc/header.h"
 #include <memory.h>
 
