@@ -73,33 +73,33 @@ int main() {
     std::thread clientThread1(clientIOThread, std::ref(firstClient));
     std::thread runThread1(runClient, std::ref(firstClient));
 
-   /* std::this_thread::sleep_for(std::chrono::seconds(3));
+    /*std::this_thread::sleep_for(std::chrono::seconds(1));*/
 
     Client secondClient(&m_clientThreadPool, "Olga");
     std::thread clientThread2(clientIOThread, std::ref(secondClient));
     std::thread runThread2(runClient, std::ref(secondClient));
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    /*std::this_thread::sleep_for(std::chrono::seconds(1));*/
 
     Client thirdClient(&m_clientThreadPool, "Kirill");
     std::thread clientThread3(clientIOThread, std::ref(thirdClient));
     std::thread runThread3(runClient, std::ref(thirdClient));
 
-    std::this_thread::sleep_for(std::chrono::seconds(8));
+    /*std::this_thread::sleep_for(std::chrono::seconds(1));*/
 
     Client fourthClient(&m_clientThreadPool, "Evgeniy");
     std::thread clientThread4(clientIOThread, std::ref(fourthClient));
-    std::thread runThread4(runClient, std::ref(fourthClient));*/
+    std::thread runThread4(runClient, std::ref(fourthClient));
 
     runThread1.join();
-    /*runThread2.join();
+    runThread2.join();
     runThread3.join();
-    runThread4.join();*/
+    runThread4.join();
 
     clientThread1.join();
-    /*clientThread2.join();
+    clientThread2.join();
     clientThread3.join();
-    clientThread4.join();*/
+    clientThread4.join();
 
     /*Client firstClient(&m_clientThreadPool);
     Client secondClient(&m_clientThreadPool);

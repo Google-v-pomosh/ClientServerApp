@@ -85,6 +85,8 @@ inline int convertError() {
 #define NIX(exp) exp
 #endif
 
+sqlite3* dbConnection;
+
 Server::Server(const uint16_t port,
                      ServerKeepAliveConfig keep_alive_config,
                      DataHandleFunctionServer handler,
@@ -98,7 +100,9 @@ Server::Server(const uint16_t port,
           m_disconnectHandle_(std::move(disconnect_handle)),
           m_threadPoolServer_(thread_count),
           m_keepAliveConfig_(keep_alive_config)
-{}
+{
+    initializeDatabase();
+}
 
 Server::~Server() {
     if(m_serverStatus_ == SocketStatusInfo::Connected) {
@@ -378,6 +382,125 @@ void Server::WaitingDataLoop() {
     }
 }
 
+void Server::printUserInfo(const Server::UserInfo &userInfo) {
+    std::cout << "Password: " << userInfo.password_ << std::endl;
+    std::cout << "Date Today: " << userInfo.timeToday_ << std::endl;
+    std::cout << "Session Port: " << userInfo.sessionPort_ << std::endl;
+    std::cout << "Time connect: " << userInfo.connectTime_ << std::endl;
+    std::cout << "Time disconnect: " << userInfo.disconnectTime_ << std::endl;
+    std::cout << "Duration Time: " << userInfo.duration_ << std::endl;
+}
+
+void Server::printAllUsersInfo() {
+    std::lock_guard<std::mutex> lock(usersMutex);
+    for (const auto& pair : users) {
+        std::cout << "Username: " << pair.first << std::endl;
+        std::cout << "User Info:" << std::endl;
+        for (const auto& userInfo : pair.second) {
+            printUserInfo(userInfo);
+            std::cout << "-----------------------------" << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
+
+int Server::createTableCallback(void *data, int argc, char **argv, char **azColName) {
+    int rc;
+    char* errorMsg = nullptr;
+
+    const char* createTableSQL = "CREATE TABLE IF NOT EXISTS UserInfo ("
+                                 "username TEXT PRIMARY KEY,"
+                                 "password TEXT,"
+                                 "sessionPort INTEGER,"
+                                 "connectTime TEXT,"
+                                 "disconnectTime TEXT,"
+                                 "duration TEXT,"
+                                 "timeToday TEXT"
+                                 ")";
+
+    rc = sqlite3_exec(dbConnection, createTableSQL, nullptr, nullptr, &errorMsg);
+
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << errorMsg << std::endl;
+        sqlite3_free(errorMsg);
+    }
+
+    return rc;
+}
+
+void Server::initializeDatabase() {
+    int rc;
+    char* errorMsg = nullptr;
+
+    rc = sqlite3_open("example.db", &dbConnection);
+    if (rc) {
+        std::cerr << "Can't open database: " << sqlite3_errmsg(dbConnection) << std::endl;
+        sqlite3_close(dbConnection);
+        return;
+    }
+
+    rc = sqlite3_exec(dbConnection, "BEGIN TRANSACTION", nullptr, nullptr, &errorMsg);
+    rc = sqlite3_exec(dbConnection, "PRAGMA foreign_keys = OFF", nullptr, nullptr, &errorMsg);
+    rc = sqlite3_exec(dbConnection, "CREATE TABLE IF NOT EXISTS UserInfo ("
+                                    "username TEXT,"
+                                    "password TEXT,"
+                                    "sessionPort INTEGER,"
+                                    "connectTime TEXT,"
+                                    "disconnectTime TEXT,"
+                                    "duration TEXT,"
+                                    "timeToday TEXT"
+                                    ")", nullptr, nullptr, &errorMsg);
+    rc = sqlite3_exec(dbConnection, "COMMIT", nullptr, nullptr, &errorMsg);
+
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << errorMsg << std::endl;
+        sqlite3_free(errorMsg);
+    } else {
+        std::cout << "Database initialized successfully." << std::endl;
+    }
+}
+
+void Server::writeToDatabase(const Server::UserInfo &userInfo) {
+    int rc;
+    char* errorMsg = nullptr;
+
+    std::string insertSQL = "INSERT INTO UserInfo (username, password, sessionPort, connectTime, disconnectTime, duration, timeToday) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+    sqlite3_stmt* stmt;
+
+    rc = sqlite3_prepare_v2(dbConnection, insertSQL.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to prepare SQL statement: " << sqlite3_errmsg(dbConnection) << std::endl;
+        return;
+    }
+
+    rc = sqlite3_bind_text(stmt, 1, userInfo.username_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(stmt, 2, userInfo.password_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_int(stmt, 3, userInfo.sessionPort_);
+    rc = sqlite3_bind_text(stmt, 4, userInfo.connectTime_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(stmt, 5, userInfo.disconnectTime_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(stmt, 6, userInfo.duration_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(stmt, 7, userInfo.timeToday_.c_str(), -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        std::cerr << "Error executing SQL statement: " << sqlite3_errmsg(dbConnection) << std::endl;
+    } else {
+        std::cout << "Data written to database successfully." << std::endl;
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+void Server::clearUser(const std::string &username) {
+    std::lock_guard<std::mutex> lock(usersMutex);
+    auto it = users.find(username);
+    if (it != users.end()) {
+        it->second.clear();
+        users.erase(it);
+    }
+}
+
 
 Server::InterfaceClientSession::InterfaceClientSession(SocketHandle_t socket, SocketAddressIn_t address)
         : m_address_(address), m_socketDescriptor_(socket){
@@ -523,14 +646,7 @@ uint16_t Server::InterfaceClientSession::GetPort() const {
     return m_address_.sin_port;
 }
 
-std::string Server::InterfaceClientSession::ConnectionTimes(const Server::InterfaceClientSession &client, Server& server) {
-    std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();
-    std::time_t t = std::chrono::system_clock::to_time_t(lastRequestTime);
-    char buft[80];
-    std::strftime(buft, sizeof(buft), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
-
-    std::string timeStr(buft);
-
+std::string Server::InterfaceClientSession::ConnectionTimes(const InterfaceClientSession& client, Server& server) {
     std::chrono::system_clock::time_point firstConnectionTime = client.GetFirstConnectionTime();
     std::chrono::system_clock::time_point lastDisconnectionTime = client.GetLastDisconnectionTime();
 
@@ -543,34 +659,19 @@ std::string Server::InterfaceClientSession::ConnectionTimes(const Server::Interf
     auto seconds = duration;
 
     std::ostringstream oss;
-    oss << "Today: " << timeStr
-        << " Connection Duration: "
-        << std::setfill('0') << std::setw(2) << hours.count() << ":"
+    oss << std::setfill('0') << std::setw(2) << hours.count() << ":"
         << std::setfill('0') << std::setw(2) << minutes.count() << ":"
         << std::setfill('0') << std::setw(2) << seconds.count();
-
-    std::string username = client.GetUserNameIn();
-    std::lock_guard<std::mutex> lock(server.usersMutex);
-    auto it = server.users.find(username);
-    if (it != server.users.end()) {
-        it->second.timeConnection_ = oss.str();
-    }
 
     return oss.str();
 }
 
 
 
-bool Server::InterfaceClientSession::FindNamePass(const DataBuffer_t& data, Server::InterfaceClientSession& client, Server& server) {
-    std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();
-    std::time_t t = std::chrono::system_clock::to_time_t(lastRequestTime);
-    char buft[80];
-    std::strftime(buft, sizeof(buft), "%Y-%m-%d", std::localtime(&t));
-    std::string timeStr(buft);
-
+bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& data,Server::InterfaceClientSession& client, Server& server) {
+    std::string timeStr = client.GetDayNow();
     uint16_t port = client.GetPort();
-
-    /*std::string totalTimeConnection = ConnectionTimes(client);*/
+    std::string connectionTime = client.GetConnectionTime();
 
     std::string receivedMessageAll(data.begin(), data.end());
     receivedMessageAll.erase(std::remove(receivedMessageAll.begin(), receivedMessageAll.end(), '\0'), receivedMessageAll.end());
@@ -590,20 +691,86 @@ bool Server::InterfaceClientSession::FindNamePass(const DataBuffer_t& data, Serv
 
     auto it = server.users.find(username);
     if(it == server.users.end()){
-        server.users.emplace(username, UserInfo(password,port, "", timeStr));
+        server.users.emplace(username, std::vector<UserInfo>{UserInfo(username,password,port,connectionTime,"", "", timeStr)});
         std::cout << "User '" << username << "' registered" << std::endl;
     }
     else {
-        if (it->second.sessionPort_ == port) {
-            std::cout << "User '" << username << "' authenticated successfully" << std::endl;
-        } else {
-            std::cerr << "Authentication failed for user '" << username << "'" << std::endl;
-        }
+        it->second.emplace_back(username,password,port,connectionTime,"", "", timeStr);
+        std::cout << "User '" << username << "' authenticated successfully" << std::endl;
     }
     return true;
 }
 
+void Server::InterfaceClientSession::OnDisconnect(const InterfaceClientSession& client, Server& server) {
+    std::string username = client.GetUserNameIn();
+    uint16_t port = client.GetPort();
+    std::string sumDuration = Server::InterfaceClientSession::ConnectionTimes(client, server);
+    std::string lastConnection = Server::InterfaceClientSession::GetDisconnectionTime();
 
+    std::lock_guard<std::mutex> lock(server.usersMutex);
+    auto it = server.users.find(username);
+    if (it != server.users.end()) {
+        for (auto& userInfo : it->second) {
+            if (userInfo.sessionPort_ == port){
+                userInfo.duration_ = sumDuration;
+                userInfo.disconnectTime_ = lastConnection;
+                break;
+            }
+        }
+    }
+}
+
+void Server::InterfaceClientSession::WriteToDB(const InterfaceClientSession& client, Server& server) {
+    std::string username = client.GetUserNameIn();
+    auto it = server.users.find(username);
+
+    if (it != server.users.end()) {
+        for (const auto& userInfo : it->second) {
+            server.writeToDatabase(userInfo);
+        }
+        server.clearUser(username);
+    }
+}
+
+/*void Server::InterfaceClientSession::WriteToDB(const InterfaceClientSession& client, Server& server) {
+    *//*std::lock_guard<std::mutex> lock(server.usersMutex);*//*
+    auto usersCopy = server.getUsers();
+
+    for (const auto& pair : usersCopy) {
+        const std::string& username = pair.first;
+        const std::vector<Server::UserInfo>& userInfoList = pair.second;
+
+        for (const auto& userInfo : userInfoList) {
+            server.writeToDatabase(userInfo);
+        }
+        server.clearUser(username);
+    }
+}*/
+
+
+std::string Server::InterfaceClientSession::GetDayNow() {
+    std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(lastRequestTime);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d", std::localtime(&t));
+    return std::string{buft};
+}
+
+std::string Server::InterfaceClientSession::GetConnectionTime() {
+    std::chrono::system_clock::time_point timeConnection = GetFirstConnectionTime();
+    std::time_t t = std::chrono::system_clock::to_time_t(timeConnection);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+    return std::string{buft};
+}
+
+std::string Server::InterfaceClientSession::GetDisconnectionTime() {
+    std::chrono::system_clock::time_point timeConnection = GetLastDisconnectionTime();
+    std::time_t t = std::chrono::system_clock::to_time_t(timeConnection);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+    return std::string{buft};
+}
 
 ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
                                                KeepAliveProperty_t interval,
@@ -614,3 +781,13 @@ ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
                                                     count_(count)
                                                {}
 
+Server::UserInfo::UserInfo(std::string username, std::string pass, uint16_t port, std::string connectTime,
+                           std::string disconnectTime, std::string duration, std::string timeToday)
+        : username_(std::move(username)),
+          password_(std::move(pass)),
+          sessionPort_(port),
+          connectTime_(std::move(connectTime)),
+          disconnectTime_(std::move(disconnectTime)),
+          duration_(std::move(duration)),
+          timeToday_(std::move(timeToday))
+{}

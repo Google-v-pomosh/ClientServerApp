@@ -12,24 +12,25 @@ std::string getHostStr(const Server::InterfaceClientSession& client)
             std::to_string(client.GetPort());
 }
 
+std::atomic<bool> exitRequested(false);
+
 Server server(8081,
               {1, 1, 1},
               [](DataBuffer_t dataBuffer, Server::InterfaceClientSession& client){
-                    std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
-                    client.FindNamePass(dataBuffer, client, server);
-                    client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
+                  std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
+                  client.AutentficateUserInfo(dataBuffer,client, server);
+                  client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
               },
               [](Server::InterfaceClientSession& client){
-                    std::cout << "Client " << getHostStr(client) << " Connected\n";
+                  std::cout << "Client " << getHostStr(client) << " Connected\n";
               },
               [](Server::InterfaceClientSession& client){
-                    std::cout << "Client " << getHostStr(client) << " disconnected\n";
-                    Server::InterfaceClientSession::ConnectionTimes(client, server);
+                  std::cout << "Client " << getHostStr(client) << " disconnected\n";
+                  client.OnDisconnect(client, server);
+                  Server::InterfaceClientSession::WriteToDB(client, server);
               },
               std::thread::hardware_concurrency()
-              );
-
-std::atomic<bool> exitRequested(false);
+);
 
 void serverIOThread(Server &server) {
     while (!exitRequested) {
@@ -44,11 +45,10 @@ void serverIOThread(Server &server) {
     }
 }
 
+
 int main() {
 
     std::cout << "Hello, World! Server" << std::endl;
-
-    /*server.SetServerDataHandler(DataHandlerToDataBase);*/
 
     if (server.StartServer() == SocketStatusInfo::Connected) {
         std::cout << "Server listening on port: " << server.GetServerPort() << '\n'
@@ -70,24 +70,3 @@ int main() {
         return EXIT_FAILURE;
     }
 }
-
-
-
-/*
-int main() {
-    std::cout << "Hello, World! Server" << std::endl;
-    try {
-        if (server.StartServer() == SocketStatusInfo::Connected){
-            std::cout   << "Server listen on port: " << server.GetServerPort() << std::endl
-                        << "Server handling thread pool size: " << server.GetThreadExecutor().GetThreadCount() << std::endl;
-            server.JoinLoop();
-            return EXIT_SUCCESS;
-        } else {
-            std::cout << "Server start error! Error code:" << int(server.GetServerStatus()) << std::endl;
-            return EXIT_FAILURE;
-        }
-    } catch (std::exception& exception) {
-        std::cerr << exception.what();
-        return EXIT_FAILURE;
-    }
-}*/

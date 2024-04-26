@@ -17,7 +17,7 @@ int main() {
     char *zErrMsg = nullptr;
     int rc;
 
-    rc = sqlite3_open("C:/CLionProjects/SC/test.db", &db);
+
 
     if (rc) {
         std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
