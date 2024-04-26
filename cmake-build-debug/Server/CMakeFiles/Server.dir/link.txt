@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o CMakeFiles/Server.dir/TCP/src/sourse.cpp.o CMakeFiles/Server.dir/__/TCP/src/sourse.cpp.o CMakeFiles/Server.dir/main.cpp.o -o Server 
