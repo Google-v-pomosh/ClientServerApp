@@ -129,7 +129,6 @@ public:
 
     void printUserInfo(const UserInfo& userInfo);
     void printAllUsersInfo();
-    static int createTableCallback(void* data, int argc, char** argv, char** azColName);
     void initializeDatabase();
     void writeToDatabase(const UserInfo& userInfo);
     void clearUser(const std::string& username);

@@ -101,20 +101,5 @@ int main() {
     clientThread3.join();
     clientThread4.join();
 
-    /*Client firstClient(&m_clientThreadPool);
-    Client secondClient(&m_clientThreadPool);
-    Client thrirdClient(&m_clientThreadPool);
-    Client fourthClient(&m_clientThreadPool);
-
-    runClient(firstClient);
-    runClient(secondClient);
-    runClient(thrirdClient);
-    runClient(fourthClient);
-
-    firstClient.JoinHandler();
-    secondClient.JoinHandler();
-    thrirdClient.JoinHandler();
-    fourthClient.JoinHandler();*/
-
     return EXIT_SUCCESS;
 }

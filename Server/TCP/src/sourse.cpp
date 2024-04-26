@@ -404,30 +404,6 @@ void Server::printAllUsersInfo() {
     }
 }
 
-int Server::createTableCallback(void *data, int argc, char **argv, char **azColName) {
-    int rc;
-    char* errorMsg = nullptr;
-
-    const char* createTableSQL = "CREATE TABLE IF NOT EXISTS UserInfo ("
-                                 "username TEXT PRIMARY KEY,"
-                                 "password TEXT,"
-                                 "sessionPort INTEGER,"
-                                 "connectTime TEXT,"
-                                 "disconnectTime TEXT,"
-                                 "duration TEXT,"
-                                 "timeToday TEXT"
-                                 ")";
-
-    rc = sqlite3_exec(dbConnection, createTableSQL, nullptr, nullptr, &errorMsg);
-
-    if (rc != SQLITE_OK) {
-        std::cerr << "SQL error: " << errorMsg << std::endl;
-        sqlite3_free(errorMsg);
-    }
-
-    return rc;
-}
-
 void Server::initializeDatabase() {
     int rc;
     char* errorMsg = nullptr;
@@ -731,22 +707,6 @@ void Server::InterfaceClientSession::WriteToDB(const InterfaceClientSession& cli
         server.clearUser(username);
     }
 }
-
-/*void Server::InterfaceClientSession::WriteToDB(const InterfaceClientSession& client, Server& server) {
-    *//*std::lock_guard<std::mutex> lock(server.usersMutex);*//*
-    auto usersCopy = server.getUsers();
-
-    for (const auto& pair : usersCopy) {
-        const std::string& username = pair.first;
-        const std::vector<Server::UserInfo>& userInfoList = pair.second;
-
-        for (const auto& userInfo : userInfoList) {
-            server.writeToDatabase(userInfo);
-        }
-        server.clearUser(username);
-    }
-}*/
-
 
 std::string Server::InterfaceClientSession::GetDayNow() {
     std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();

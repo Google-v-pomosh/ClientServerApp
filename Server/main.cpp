@@ -48,7 +48,7 @@ void serverIOThread(Server &server) {
 
 int main() {
 
-    std::cout << "Hello, World! Server" << std::endl;
+    std::cout << "Hello, World, Iam Server" << std::endl;
 
     if (server.StartServer() == SocketStatusInfo::Connected) {
         std::cout << "Server listening on port: " << server.GetServerPort() << '\n'

@@ -34,7 +34,7 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 10,
+				"line" : 12,
 				"parent" : 0
 			}
 		]
@@ -86,7 +86,8 @@
 			},
 			"sourceIndexes" : 
 			[
-				1
+				1,
+				3
 			]
 		}
 	],
@@ -124,7 +125,15 @@
 			"sourceIndexes" : 
 			[
 				0,
-				1
+				1,
+				3
+			]
+		},
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				2
 			]
 		}
 	],
@@ -140,6 +149,17 @@
 			"backtrace" : 1,
 			"compileGroupIndex" : 1,
 			"path" : "SQLite/main.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "SQLite/Windows/inc/header.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "SQLite/Windows/src/sourse.cpp",
 			"sourceGroupIndex" : 0
 		}
 	],
