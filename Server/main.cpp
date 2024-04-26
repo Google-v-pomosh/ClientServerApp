@@ -1,6 +1,8 @@
 #include <iostream>
 #include "../Server/TCP/inc/header.h"
 
+//#define DEGUGLOG
+
 std::string getHostStr(const Server::InterfaceClientSession& client)
 {
     uint32_t ip = client.GetHost();
@@ -17,7 +19,9 @@ std::atomic<bool> exitRequested(false);
 Server server(8081,
               {1, 1, 1},
               [](DataBuffer_t dataBuffer, Server::InterfaceClientSession& client){
+#ifdef DEGUGLOG
                   std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
+#endif
                   client.AutentficateUserInfo(dataBuffer,client, server);
                   client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
               },

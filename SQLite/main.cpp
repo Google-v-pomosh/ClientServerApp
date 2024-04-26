@@ -1,6 +1,9 @@
 #ifdef _WIN32
-#include "Windows/inc/sqlite3.h"
+#include "Lib/inc/sqlite3.h"
+#include "Lib/inc/header.h"
 #else
+#include "Lib/inc/sqlite3.h"
+#include "Lib/inc/header.h"
 #endif
 
 #include <iostream>
@@ -9,7 +12,7 @@
 #include <vector>
 #include <sstream>
 #include <iterator>
-#include "header.h"
+
 
 std::atomic<bool> exitRequested(false);
 

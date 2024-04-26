@@ -69,19 +69,19 @@ include Server/CMakeFiles/Server.dir/progress.make
 # Include the compile flags for this target's objects.
 include Server/CMakeFiles/Server.dir/flags.make
 
-Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o: Server/CMakeFiles/Server.dir/flags.make
-Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o: /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c
-Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o: Server/CMakeFiles/Server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o -MF CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o.d -o CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o -c /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c
+Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o: Server/CMakeFiles/Server.dir/flags.make
+Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o: /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c
+Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o: Server/CMakeFiles/Server.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o -MF CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o.d -o CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o -c /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c
 
-Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.i"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c > CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.i
+Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.i"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c > CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.i
 
-Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.s"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c -o CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.s
+Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.s"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c -o CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.s
 
 Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.o: Server/CMakeFiles/Server.dir/flags.make
 Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.o: /home/alex/CLionProjects/ClientServerApp/Server/TCP/src/sourse.cpp
@@ -127,7 +127,7 @@ Server/CMakeFiles/Server.dir/main.cpp.s: cmake_force
 
 # Object files for target Server
 Server_OBJECTS = \
-"CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o" \
+"CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o" \
 "CMakeFiles/Server.dir/TCP/src/sourse.cpp.o" \
 "CMakeFiles/Server.dir/__/TCP/src/sourse.cpp.o" \
 "CMakeFiles/Server.dir/main.cpp.o"
@@ -135,7 +135,7 @@ Server_OBJECTS = \
 # External object files for target Server
 Server_EXTERNAL_OBJECTS =
 
-Server/Server: Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o
+Server/Server: Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o
 Server/Server: Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.o
 Server/Server: Server/CMakeFiles/Server.dir/__/TCP/src/sourse.cpp.o
 Server/Server: Server/CMakeFiles/Server.dir/main.cpp.o

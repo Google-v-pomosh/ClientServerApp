@@ -5,13 +5,13 @@
 # compile CXX with /usr/bin/c++
 C_DEFINES = 
 
-C_INCLUDES = -I/home/alex/CLionProjects/ClientServerApp/Server/../SQLite/Windows/inc -I/home/alex/CLionProjects/ClientServerApp/Server/../TCP/inc -I/home/alex/CLionProjects/ClientServerApp/Server/../Server/TCP/inc
+C_INCLUDES = -I/home/alex/CLionProjects/ClientServerApp/Server/../SQLite/Lib/inc -I/home/alex/CLionProjects/ClientServerApp/Server/../TCP/inc -I/home/alex/CLionProjects/ClientServerApp/Server/../Server/TCP/inc
 
 C_FLAGS = -g -fdiagnostics-color=always
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/alex/CLionProjects/ClientServerApp/Server/../SQLite/Windows/inc -I/home/alex/CLionProjects/ClientServerApp/Server/../TCP/inc -I/home/alex/CLionProjects/ClientServerApp/Server/../Server/TCP/inc
+CXX_INCLUDES = -I/home/alex/CLionProjects/ClientServerApp/Server/../SQLite/Lib/inc -I/home/alex/CLionProjects/ClientServerApp/Server/../TCP/inc -I/home/alex/CLionProjects/ClientServerApp/Server/../Server/TCP/inc
 
 CXX_FLAGS = -g -fdiagnostics-color=always
 

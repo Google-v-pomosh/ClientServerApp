@@ -5,13 +5,13 @@
 # compile CXX with /usr/bin/c++
 C_DEFINES = 
 
-C_INCLUDES = -I/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/inc
+C_INCLUDES = -I/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/inc
 
 C_FLAGS = -g -fdiagnostics-color=always
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/inc
+CXX_INCLUDES = -I/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/inc
 
 CXX_FLAGS = -g -fdiagnostics-color=always
 

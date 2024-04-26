@@ -685,7 +685,7 @@ bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& da
     auto it = server.users.find(username);
     if(it == server.users.end()){
         server.users.emplace(username, std::vector<UserInfo>{UserInfo(username,password,port,connectionTime,"", "", timeStr)});
-        std::cout << "User '" << username << "' registered" << std::endl;
+        std::cout << "User '" << username << "' has been assigned port: " << client.GetPort() << std::endl;
     }
     else {
         it->second.emplace_back(username,password,port,connectionTime,"", "", timeStr);

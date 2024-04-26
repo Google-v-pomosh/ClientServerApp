@@ -1631,7 +1631,7 @@ struct sqlite3_vfs {
 ** interface is called automatically by sqlite3_initialize() and
 ** sqlite3_os_end() is called by sqlite3_shutdown().  Appropriate
 ** implementations for sqlite3_os_init() and sqlite3_os_end()
-** are built into SQLite when it is compiled for Unix, Windows, or OS/2.
+** are built into SQLite when it is compiled for Unix, Lib, or OS/2.
 ** When [custom builds | built for other platforms]
 ** (using the [SQLITE_OS_OTHER=1] compile-time
 ** option) the application must supply a suitable implementation for
@@ -2080,7 +2080,7 @@ struct sqlite3_mem_methods {
 ** [[SQLITE_CONFIG_WIN32_HEAPSIZE]]
 ** <dt>SQLITE_CONFIG_WIN32_HEAPSIZE
 ** <dd>^The SQLITE_CONFIG_WIN32_HEAPSIZE option is only available if SQLite is
-** compiled for Windows with the [SQLITE_WIN32_MALLOC] pre-processor macro
+** compiled for Lib with the [SQLITE_WIN32_MALLOC] pre-processor macro
 ** defined. ^SQLITE_CONFIG_WIN32_HEAPSIZE takes a 32-bit unsigned integer value
 ** that specifies the maximum size of the created heap.
 **
@@ -3014,7 +3014,7 @@ SQLITE_API char *sqlite3_vsnprintf(int,char*,const char*, va_list);
 ** The SQLite core uses these three routines for all of its own
 ** internal memory allocation needs. "Core" in the previous sentence
 ** does not include operating-system specific [VFS] implementation.  The
-** Windows VFS uses native malloc() and free() for some operations.
+** Lib VFS uses native malloc() and free() for some operations.
 **
 ** ^The sqlite3_malloc() routine returns a pointer to a block
 ** of memory at least N bytes in length, where N is the parameter.
@@ -3718,7 +3718,7 @@ SQLITE_API void sqlite3_progress_handler(sqlite3*, int, int(*)(void*), void*);
 **          An error. "darkstar" is not a recognized authority.
 ** <tr><td style="white-space:nowrap">
 **          file:///C:/Documents%20and%20Settings/fred/Desktop/data.db
-**     <td> Windows only: Open the file "data.db" on fred's desktop on drive
+**     <td> Lib only: Open the file "data.db" on fred's desktop on drive
 **          C:. Note that the %20 escaping in this example is not strictly
 **          necessary - space characters can be used literally
 **          in URI filenames.
@@ -3743,13 +3743,13 @@ SQLITE_API void sqlite3_progress_handler(sqlite3*, int, int(*)(void*), void*);
 ** corresponding octet. If this process generates an invalid UTF-8 encoding,
 ** the results are undefined.
 **
-** <b>Note to Windows users:</b>  The encoding used for the filename argument
+** <b>Note to Lib users:</b>  The encoding used for the filename argument
 ** of sqlite3_open() and sqlite3_open_v2() must be UTF-8, not whatever
 ** codepage is currently defined.  Filenames containing international
 ** characters must be converted to UTF-8 prior to passing them into
 ** sqlite3_open() or sqlite3_open_v2().
 **
-** <b>Note to Windows Runtime users:</b>  The temporary directory must be set
+** <b>Note to Lib Runtime users:</b>  The temporary directory must be set
 ** prior to calling sqlite3_open() or sqlite3_open_v2().  Otherwise, various
 ** features that require the use of temporary files may fail.
 **
@@ -6450,7 +6450,7 @@ SQLITE_API int sqlite3_sleep(int);
 ** temporary file directory.
 **
 ** Applications are strongly discouraged from using this global variable.
-** It is required to set a temporary folder on Windows Runtime (WinRT).
+** It is required to set a temporary folder on Lib Runtime (WinRT).
 ** But for all other platforms, it is highly recommended that applications
 ** neither read nor write this variable.  This global variable is a relic
 ** that exists for backwards compatibility of legacy applications and should
@@ -6480,13 +6480,13 @@ SQLITE_API int sqlite3_sleep(int);
 ** so itself, taking care to only do so after all [database connection]
 ** objects have been destroyed.
 **
-** <b>Note to Windows Runtime users:</b>  The temporary directory must be set
+** <b>Note to Lib Runtime users:</b>  The temporary directory must be set
 ** prior to calling [sqlite3_open] or [sqlite3_open_v2].  Otherwise, various
 ** features that require the use of temporary files may fail.  Here is an
-** example of how to do this using C++ with the Windows Runtime:
+** example of how to do this using C++ with the Lib Runtime:
 **
 ** <blockquote><pre>
-** LPCWSTR zPath = Windows::Storage::ApplicationData::Current->
+** LPCWSTR zPath = Lib::Storage::ApplicationData::Current->
 ** &nbsp;     TemporaryFolder->Path->Data();
 ** char zPathBuf&#91;MAX_PATH + 1&#93;;
 ** memset(zPathBuf, 0, sizeof(zPathBuf));
@@ -6537,7 +6537,7 @@ SQLITE_API SQLITE_EXTERN char *sqlite3_data_directory;
 /*
 ** CAPI3REF: Win32 Specific Interface
 **
-** These interfaces are available only on Windows.  The
+** These interfaces are available only on Lib.  The
 ** [sqlite3_win32_set_directory] interface is used to set the value associated
 ** with the [sqlite3_temp_directory] or [sqlite3_data_directory] variable, to
 ** zValue, depending on the value of the type parameter.  The zValue parameter
@@ -6563,7 +6563,7 @@ SQLITE_API int sqlite3_win32_set_directory16(unsigned long type, const void *zVa
 /*
 ** CAPI3REF: Win32 Directory Types
 **
-** These macros are only available on Windows.  They define the allowed values
+** These macros are only available on Lib.  They define the allowed values
 ** for the type argument to the [sqlite3_win32_set_directory] interface.
 */
 #define SQLITE_WIN32_DATA_DIRECTORY_TYPE  1
@@ -7982,7 +7982,7 @@ SQLITE_API int sqlite3_vfs_unregister(sqlite3_vfs*);
 ** that does no real locking and is appropriate for use in
 ** a single-threaded application.  The SQLITE_MUTEX_PTHREADS and
 ** SQLITE_MUTEX_W32 implementations are appropriate for use on Unix
-** and Windows.
+** and Lib.
 **
 ** If SQLite is compiled with the SQLITE_MUTEX_APPDEF preprocessor
 ** macro defined (with "-DSQLITE_MUTEX_APPDEF=1"), then no mutex
@@ -8056,7 +8056,7 @@ SQLITE_API int sqlite3_vfs_unregister(sqlite3_vfs*);
 ** can enter.)^  If the same thread tries to enter any mutex other
 ** than an SQLITE_MUTEX_RECURSIVE more than once, the behavior is undefined.
 **
-** ^(Some systems (for example, Windows 95) do not support the operation
+** ^(Some systems (for example, Lib 95) do not support the operation
 ** implemented by sqlite3_mutex_try().  On those systems, sqlite3_mutex_try()
 ** will always return SQLITE_BUSY. In most cases the SQLite core only uses
 ** sqlite3_mutex_try() as an optimization, so this is acceptable

@@ -24,7 +24,7 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/inc"/>
+					<Add directory="/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/inc"/>
 					<Add directory="/usr/include/c++/11"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
 					<Add directory="/usr/include/c++/11/backward"/>
@@ -47,7 +47,7 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/inc"/>
+					<Add directory="/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/inc"/>
 					<Add directory="/usr/include/c++/11"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
 					<Add directory="/usr/include/c++/11/backward"/>
@@ -64,13 +64,13 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/inc/header.h">
+		<Unit filename="/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/inc/header.h">
 			<Option target="SQLite"/>
 		</Unit>
-		<Unit filename="/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sourse.cpp">
+		<Unit filename="/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sourse.cpp">
 			<Option target="SQLite"/>
 		</Unit>
-		<Unit filename="/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c">
+		<Unit filename="/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c">
 			<Option target="SQLite"/>
 		</Unit>
 		<Unit filename="/home/alex/CLionProjects/ClientServerApp/SQLite/main.cpp">

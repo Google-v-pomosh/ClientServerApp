@@ -2,6 +2,9 @@
 #include "../Client/TCP/inc/header.h"
 
 
+//#define DEBUGLOG
+
+
 std::string getHostStr(uint32_t ip, uint16_t port) {
     return  std::string() +
             std::to_string(int(reinterpret_cast<char*>(&ip)[0])) + '.' +
@@ -16,14 +19,16 @@ void runClient(Client& client) {
         return;
     }
     if (client.ConnectTo(kLocalhostIP, 8081) == SocketStatusInfo::Connected) {
-        std::clog << "Client Connected\n";
+        std::cout << "Client Connected\n";
         if (!client.SendAuthData()) {
             std::cerr << "Failed to send auth data\n";
             return;
         }
         //client.GetDataPC();
         client.SetHandler([&client](DataBuffer_t dataBuffer){
+#ifdef DEBUGLOG
             std::clog << "Recived " << dataBuffer.size() << " bytes: " << (char *)dataBuffer.data() << '\n';
+#endif
             client.SendData("Hello, server\0", sizeof("Hello, server\0"));
         });
         client.SendData("Hello, server\0", sizeof("Hello, server\0"));
@@ -38,13 +43,13 @@ void clientIOThread(Client& client) {
     bool running = true;
     client.SetHandler([&](const DataBuffer_t& data) {
         std::string receivedMessage(data.begin(), data.end());
+#ifdef DEBUGLOG
         std::cout << "Received: " << receivedMessage << std::endl;
+#endif
     });
 
     while (running) {
-        std::cout << "> ";
         std::getline(std::cin, input);
-
         if (input == "exit") {
             running = false;
             client.Disconnect();

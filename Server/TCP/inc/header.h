@@ -21,7 +21,7 @@
 #include <iomanip>
 #include <iostream>
 
-#ifdef _WIN32 // Windows NT
+#ifdef _WIN32 // Lib NT
 #include <WinSock2.h>
 #include <mstcpip.h>
 #else // *nix
@@ -30,12 +30,11 @@
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #endif
 
-#include "../../../SQLite/Windows/inc/sqlite3.h"
-/*#include <sqlite3.h>*/
+#include "../../../SQLite/Lib/inc/sqlite3.h"
 #include "../../../TCP/inc/header.h"
 
 class ServerKeepAliveConfig {

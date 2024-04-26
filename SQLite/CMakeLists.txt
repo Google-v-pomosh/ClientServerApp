@@ -3,11 +3,11 @@ project(SQLite)
 
 set(CMAKE_CXX_STANDARD 17)
 
-file(GLOB SOURCES "main.cpp" "Windows/src/*.c")
+file(GLOB SOURCES "main.cpp" "Lib/src/*.c")
 
 add_executable(SQLite ${SOURCES}
-        Windows/inc/header.h
-        Windows/src/sourse.cpp)
+        Lib/inc/header.h
+        Lib/src/sourse.cpp)
 
-target_include_directories(SQLite PUBLIC Windows/inc)
+target_include_directories(SQLite PUBLIC Lib/inc)
 

@@ -154,29 +154,29 @@ TCP/src/sourse.cpp.s:
 	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f Server/CMakeFiles/Server.dir/build.make Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.s
 .PHONY : TCP/src/sourse.cpp.s
 
-__/SQLite/Windows/src/sqlite3.o: __/SQLite/Windows/src/sqlite3.c.o
-.PHONY : __/SQLite/Windows/src/sqlite3.o
+__/SQLite/Lib/src/sqlite3.o: __/SQLite/Lib/src/sqlite3.c.o
+.PHONY : __/SQLite/Lib/src/sqlite3.o
 
 # target to build an object file
-__/SQLite/Windows/src/sqlite3.c.o:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f Server/CMakeFiles/Server.dir/build.make Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o
-.PHONY : __/SQLite/Windows/src/sqlite3.c.o
+__/SQLite/Lib/src/sqlite3.c.o:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f Server/CMakeFiles/Server.dir/build.make Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o
+.PHONY : __/SQLite/Lib/src/sqlite3.c.o
 
-__/SQLite/Windows/src/sqlite3.i: __/SQLite/Windows/src/sqlite3.c.i
-.PHONY : __/SQLite/Windows/src/sqlite3.i
+__/SQLite/Lib/src/sqlite3.i: __/SQLite/Lib/src/sqlite3.c.i
+.PHONY : __/SQLite/Lib/src/sqlite3.i
 
 # target to preprocess a source file
-__/SQLite/Windows/src/sqlite3.c.i:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f Server/CMakeFiles/Server.dir/build.make Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.i
-.PHONY : __/SQLite/Windows/src/sqlite3.c.i
+__/SQLite/Lib/src/sqlite3.c.i:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f Server/CMakeFiles/Server.dir/build.make Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.i
+.PHONY : __/SQLite/Lib/src/sqlite3.c.i
 
-__/SQLite/Windows/src/sqlite3.s: __/SQLite/Windows/src/sqlite3.c.s
-.PHONY : __/SQLite/Windows/src/sqlite3.s
+__/SQLite/Lib/src/sqlite3.s: __/SQLite/Lib/src/sqlite3.c.s
+.PHONY : __/SQLite/Lib/src/sqlite3.s
 
 # target to generate assembly for a file
-__/SQLite/Windows/src/sqlite3.c.s:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f Server/CMakeFiles/Server.dir/build.make Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.s
-.PHONY : __/SQLite/Windows/src/sqlite3.c.s
+__/SQLite/Lib/src/sqlite3.c.s:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f Server/CMakeFiles/Server.dir/build.make Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.s
+.PHONY : __/SQLite/Lib/src/sqlite3.c.s
 
 __/TCP/src/sourse.o: __/TCP/src/sourse.cpp.o
 .PHONY : __/TCP/src/sourse.o
@@ -238,9 +238,9 @@ help:
 	@echo "... TCP/src/sourse.o"
 	@echo "... TCP/src/sourse.i"
 	@echo "... TCP/src/sourse.s"
-	@echo "... __/SQLite/Windows/src/sqlite3.o"
-	@echo "... __/SQLite/Windows/src/sqlite3.i"
-	@echo "... __/SQLite/Windows/src/sqlite3.s"
+	@echo "... __/SQLite/Lib/src/sqlite3.o"
+	@echo "... __/SQLite/Lib/src/sqlite3.i"
+	@echo "... __/SQLite/Lib/src/sqlite3.s"
 	@echo "... __/TCP/src/sourse.o"
 	@echo "... __/TCP/src/sourse.i"
 	@echo "... __/TCP/src/sourse.s"

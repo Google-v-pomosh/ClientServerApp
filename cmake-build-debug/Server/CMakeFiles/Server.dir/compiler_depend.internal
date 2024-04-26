@@ -3,7 +3,7 @@
 
 Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.o
  /home/alex/CLionProjects/ClientServerApp/Server/TCP/src/sourse.cpp
- /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/inc/sqlite3.h
+ /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/inc/sqlite3.h
  /home/alex/CLionProjects/ClientServerApp/TCP/inc/header.h
  /home/alex/CLionProjects/ClientServerApp/Server/TCP/inc/header.h
  /usr/include/alloca.h
@@ -152,7 +152,6 @@ Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.o
  /usr/include/c++/11/shared_mutex
  /usr/include/c++/11/sstream
  /usr/include/c++/11/stdexcept
- /usr/include/c++/11/stdlib.h
  /usr/include/c++/11/streambuf
  /usr/include/c++/11/string
  /usr/include/c++/11/string_view
@@ -298,8 +297,8 @@ Server/CMakeFiles/Server.dir/TCP/src/sourse.cpp.o
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h
 
-Server/CMakeFiles/Server.dir/__/SQLite/Windows/src/sqlite3.c.o
- /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c
+Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.o
+ /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c
  /usr/include/alloca.h
  /usr/include/asm-generic/bitsperlong.h
  /usr/include/asm-generic/errno-base.h
@@ -699,7 +698,7 @@ Server/CMakeFiles/Server.dir/__/TCP/src/sourse.cpp.o
 
 Server/CMakeFiles/Server.dir/main.cpp.o
  /home/alex/CLionProjects/ClientServerApp/Server/main.cpp
- /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/inc/sqlite3.h
+ /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/inc/sqlite3.h
  /home/alex/CLionProjects/ClientServerApp/TCP/inc/header.h
  /home/alex/CLionProjects/ClientServerApp/Server/TCP/inc/header.h
  /usr/include/alloca.h
@@ -848,7 +847,6 @@ Server/CMakeFiles/Server.dir/main.cpp.o
  /usr/include/c++/11/shared_mutex
  /usr/include/c++/11/sstream
  /usr/include/c++/11/stdexcept
- /usr/include/c++/11/stdlib.h
  /usr/include/c++/11/streambuf
  /usr/include/c++/11/string
  /usr/include/c++/11/string_view

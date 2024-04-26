@@ -29,7 +29,7 @@
 #define HARDWARE_CONCURRENCY std::thread::hardware_concurrency()
 
 
-#ifdef _WIN32 // Windows
+#ifdef _WIN32 // Lib
 typedef int SocketLength_t;
 typedef SOCKADDR_IN SocketAddressIn_t;
 typedef SOCKET SocketHandle_t;
@@ -104,7 +104,7 @@ private:
 
 };
 
-#ifdef _WIN32 //Windows
+#ifdef _WIN32 //Lib
 namespace {
     class WindowsSocketInitializer {
     public:

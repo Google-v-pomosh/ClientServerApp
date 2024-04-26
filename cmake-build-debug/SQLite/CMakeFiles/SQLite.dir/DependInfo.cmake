@@ -8,8 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c" "SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o" "gcc" "SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o.d"
-  "/home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sourse.cpp" "SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o" "gcc" "SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o.d"
+  "/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c" "SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o" "gcc" "SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o.d"
+  "/home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sourse.cpp" "SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o" "gcc" "SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o.d"
   "/home/alex/CLionProjects/ClientServerApp/SQLite/main.cpp" "SQLite/CMakeFiles/SQLite.dir/main.cpp.o" "gcc" "SQLite/CMakeFiles/SQLite.dir/main.cpp.o.d"
   )
 

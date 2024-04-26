@@ -130,53 +130,53 @@ SQLite/fast:
 	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/build
 .PHONY : SQLite/fast
 
-Windows/src/sourse.o: Windows/src/sourse.cpp.o
-.PHONY : Windows/src/sourse.o
+Lib/src/sourse.o: Lib/src/sourse.cpp.o
+.PHONY : Lib/src/sourse.o
 
 # target to build an object file
-Windows/src/sourse.cpp.o:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o
-.PHONY : Windows/src/sourse.cpp.o
+Lib/src/sourse.cpp.o:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o
+.PHONY : Lib/src/sourse.cpp.o
 
-Windows/src/sourse.i: Windows/src/sourse.cpp.i
-.PHONY : Windows/src/sourse.i
+Lib/src/sourse.i: Lib/src/sourse.cpp.i
+.PHONY : Lib/src/sourse.i
 
 # target to preprocess a source file
-Windows/src/sourse.cpp.i:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.i
-.PHONY : Windows/src/sourse.cpp.i
+Lib/src/sourse.cpp.i:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.i
+.PHONY : Lib/src/sourse.cpp.i
 
-Windows/src/sourse.s: Windows/src/sourse.cpp.s
-.PHONY : Windows/src/sourse.s
+Lib/src/sourse.s: Lib/src/sourse.cpp.s
+.PHONY : Lib/src/sourse.s
 
 # target to generate assembly for a file
-Windows/src/sourse.cpp.s:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.s
-.PHONY : Windows/src/sourse.cpp.s
+Lib/src/sourse.cpp.s:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.s
+.PHONY : Lib/src/sourse.cpp.s
 
-Windows/src/sqlite3.o: Windows/src/sqlite3.c.o
-.PHONY : Windows/src/sqlite3.o
+Lib/src/sqlite3.o: Lib/src/sqlite3.c.o
+.PHONY : Lib/src/sqlite3.o
 
 # target to build an object file
-Windows/src/sqlite3.c.o:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o
-.PHONY : Windows/src/sqlite3.c.o
+Lib/src/sqlite3.c.o:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o
+.PHONY : Lib/src/sqlite3.c.o
 
-Windows/src/sqlite3.i: Windows/src/sqlite3.c.i
-.PHONY : Windows/src/sqlite3.i
+Lib/src/sqlite3.i: Lib/src/sqlite3.c.i
+.PHONY : Lib/src/sqlite3.i
 
 # target to preprocess a source file
-Windows/src/sqlite3.c.i:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.i
-.PHONY : Windows/src/sqlite3.c.i
+Lib/src/sqlite3.c.i:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.i
+.PHONY : Lib/src/sqlite3.c.i
 
-Windows/src/sqlite3.s: Windows/src/sqlite3.c.s
-.PHONY : Windows/src/sqlite3.s
+Lib/src/sqlite3.s: Lib/src/sqlite3.c.s
+.PHONY : Lib/src/sqlite3.s
 
 # target to generate assembly for a file
-Windows/src/sqlite3.c.s:
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.s
-.PHONY : Windows/src/sqlite3.c.s
+Lib/src/sqlite3.c.s:
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug && $(MAKE) $(MAKESILENT) -f SQLite/CMakeFiles/SQLite.dir/build.make SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.s
+.PHONY : Lib/src/sqlite3.c.s
 
 main.o: main.cpp.o
 .PHONY : main.o
@@ -211,12 +211,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... SQLite"
-	@echo "... Windows/src/sourse.o"
-	@echo "... Windows/src/sourse.i"
-	@echo "... Windows/src/sourse.s"
-	@echo "... Windows/src/sqlite3.o"
-	@echo "... Windows/src/sqlite3.i"
-	@echo "... Windows/src/sqlite3.s"
+	@echo "... Lib/src/sourse.o"
+	@echo "... Lib/src/sourse.i"
+	@echo "... Lib/src/sourse.s"
+	@echo "... Lib/src/sqlite3.o"
+	@echo "... Lib/src/sqlite3.i"
+	@echo "... Lib/src/sqlite3.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

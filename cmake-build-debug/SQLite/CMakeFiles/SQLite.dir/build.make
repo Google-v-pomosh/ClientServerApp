@@ -69,19 +69,19 @@ include SQLite/CMakeFiles/SQLite.dir/progress.make
 # Include the compile flags for this target's objects.
 include SQLite/CMakeFiles/SQLite.dir/flags.make
 
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o: SQLite/CMakeFiles/SQLite.dir/flags.make
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o: /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o: SQLite/CMakeFiles/SQLite.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o -MF CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o.d -o CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o -c /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o: SQLite/CMakeFiles/SQLite.dir/flags.make
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o: /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o: SQLite/CMakeFiles/SQLite.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o -MF CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o.d -o CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o -c /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c
 
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.i"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c > CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.i
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.i"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c > CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.i
 
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.s"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sqlite3.c -o CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.s
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.s"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sqlite3.c -o CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.s
 
 SQLite/CMakeFiles/SQLite.dir/main.cpp.o: SQLite/CMakeFiles/SQLite.dir/flags.make
 SQLite/CMakeFiles/SQLite.dir/main.cpp.o: /home/alex/CLionProjects/ClientServerApp/SQLite/main.cpp
@@ -97,32 +97,32 @@ SQLite/CMakeFiles/SQLite.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SQLite.dir/main.cpp.s"
 	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alex/CLionProjects/ClientServerApp/SQLite/main.cpp -o CMakeFiles/SQLite.dir/main.cpp.s
 
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o: SQLite/CMakeFiles/SQLite.dir/flags.make
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o: /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sourse.cpp
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o: SQLite/CMakeFiles/SQLite.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o -MF CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o.d -o CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o -c /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sourse.cpp
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o: SQLite/CMakeFiles/SQLite.dir/flags.make
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o: /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sourse.cpp
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o: SQLite/CMakeFiles/SQLite.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o -MF CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o.d -o CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o -c /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sourse.cpp
 
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.i"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sourse.cpp > CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.i
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.i"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sourse.cpp > CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.i
 
-SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.s"
-	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alex/CLionProjects/ClientServerApp/SQLite/Windows/src/sourse.cpp -o CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.s
+SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.s"
+	cd /home/alex/CLionProjects/ClientServerApp/cmake-build-debug/SQLite && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/alex/CLionProjects/ClientServerApp/SQLite/Lib/src/sourse.cpp -o CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.s
 
 # Object files for target SQLite
 SQLite_OBJECTS = \
-"CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o" \
+"CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o" \
 "CMakeFiles/SQLite.dir/main.cpp.o" \
-"CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o"
+"CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o"
 
 # External object files for target SQLite
 SQLite_EXTERNAL_OBJECTS =
 
-SQLite/SQLite: SQLite/CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o
+SQLite/SQLite: SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o
 SQLite/SQLite: SQLite/CMakeFiles/SQLite.dir/main.cpp.o
-SQLite/SQLite: SQLite/CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o
+SQLite/SQLite: SQLite/CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o
 SQLite/SQLite: SQLite/CMakeFiles/SQLite.dir/build.make
 SQLite/SQLite: SQLite/CMakeFiles/SQLite.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable SQLite"

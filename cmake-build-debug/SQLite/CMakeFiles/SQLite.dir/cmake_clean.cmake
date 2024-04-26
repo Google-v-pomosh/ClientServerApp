@@ -1,8 +1,8 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o"
-  "CMakeFiles/SQLite.dir/Windows/src/sourse.cpp.o.d"
-  "CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o"
-  "CMakeFiles/SQLite.dir/Windows/src/sqlite3.c.o.d"
+  "CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o"
+  "CMakeFiles/SQLite.dir/Lib/src/sourse.cpp.o.d"
+  "CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o"
+  "CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.o.d"
   "CMakeFiles/SQLite.dir/main.cpp.o"
   "CMakeFiles/SQLite.dir/main.cpp.o.d"
   "SQLite"

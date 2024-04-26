@@ -219,8 +219,7 @@ Server/CMakeFiles/Server.dir/main.cpp.o: \
  /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h \
  /usr/include/linux/falloc.h /usr/include/x86_64-linux-gnu/bits/stat.h \
  /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
- /usr/include/c++/11/stdlib.h \
- /home/alex/CLionProjects/ClientServerApp/Server/../Server/TCP/inc/../../../SQLite/Windows/inc/sqlite3.h \
+ /home/alex/CLionProjects/ClientServerApp/Server/../Server/TCP/inc/../../../SQLite/Lib/inc/sqlite3.h \
  /home/alex/CLionProjects/ClientServerApp/Server/../Server/TCP/inc/../../../TCP/inc/header.h \
  /usr/include/c++/11/cinttypes /usr/include/inttypes.h \
  /usr/include/c++/11/queue /usr/include/c++/11/deque \
