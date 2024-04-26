@@ -7,8 +7,9 @@
 #ifdef _WIN32
 #define DB_PATH "C:/CLionProjects/SC/cmake-build-debug/Server/example.db"
 #else
-#endif
 #define DB_PATH "/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server/example.db"
+#endif
+
 
 class DatabaseHandler {
 public:
