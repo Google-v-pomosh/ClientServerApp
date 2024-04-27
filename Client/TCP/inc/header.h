@@ -3,72 +3,107 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <utility>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <Windows.h>
-typedef SOCKET socket_t;
+#include <iphlpapi.h>
+#define SOCKET_INVALID INVALID_SOCKET
 #else
-typedef int socket_t;
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <sys/utsname.h>
+#define SOCKET_INVALID (-1)
 #endif
 
 #include "../../../TCP/inc/header.h"
 #include <memory.h>
 
-class Client : public ClientBase {
+#pragma comment(lib, "IPHLPAPI.lib")
+
+class Client : public TCPInterfaceBase {
 private:
     enum class ThreadManagementType : bool {
-        single_thread = false,
-        thread_pool = true
+        SingleThread = false,
+        ThreadPool = true
     };
 
-    union ThreadClient {
-        std::thread* thread;
-        ThreadPool* threadPool;
-        ThreadClient(): thread(nullptr) {}
-        ThreadClient(ThreadPool* threadPool) : threadPool(threadPool) {}
-        ~ThreadClient(){}
+    union ClientThread {
+        std::thread* m_threadClient_;
+        NetworkThreadPool* m_threadPoolClient_;
+        ClientThread(): m_threadClient_(nullptr) {}
+        explicit ClientThread(NetworkThreadPool* client_thread_pool) : m_threadPoolClient_(client_thread_pool) {}
+        ~ClientThread(){}
 
     };
 
-    SocketAddr_in address_;
-    socket_t client_socket_;
+    class PcDataReqest {
+    public:
+        void SetDomain(std::string domain) {domain_ = std::move(domain);};
+        void SetMachine(std::string machine) {machine_ = std::move(machine);};
+        void SetIp(std::string ip) {ip_ = std::move(ip);};
+        void SetUser(std::string user) {user_ = std::move(user);};
 
-    std::mutex handle_mutex_;
-    std::function<void(DataBuffer)> function_handler = [](DataBuffer){};
-    ThreadManagementType threadManagmentType;
-    ThreadClient threadClient;
-    status client_status_ = status::disconnected;
+        [[nodiscard]] std::string GetDomain() const {return domain_;};
+        [[nodiscard]] std::string GetMachine() const {return machine_;};
+        [[nodiscard]] std::string GetIp() const {return ip_;};
+        [[nodiscard]] std::string GetUser() const {return user_;};
+    private:
+        std::string domain_;
+        std::string machine_;
+        std::string ip_;
+        std::string user_;
+    };
 
-    void handleSingleThread();
-    void handleThreadPool();
+    SocketAddressIn_t m_addressClient_;
+    SocketHandle_t m_socketClient_;
+
+    std::mutex m_handleMutex_;
+    std::function<void(DataBuffer_t)> m_dataHandlerFunction = [](const DataBuffer_t&){};
+    ThreadManagementType m_threadManagmentType_;
+    ClientThread m_threadClient;
+    SockStatusInfo_t m_statusClient_ = SockStatusInfo_t::Disconnected;
+
+    void HandleSingleThread();
+    void HandleThreadPool();
+    void JoinThread();
+
+
+    std::string username_;
 
 public:
-    typedef std::function<void(DataBuffer)> function_handler_typedef;
-    Client() noexcept;
-    Client(ThreadPool* threadPool) noexcept;
-    virtual ~Client() override;
+    using DataHandleFunctionClient = std::function<void(DataBuffer_t)>;
+    Client(std::string  username) noexcept;
+    explicit Client(NetworkThreadPool* client_thread_pool, std::string  username) noexcept;
+    ~Client() override;
 
-    status connectTo(uint32_t host, uint16_t port) noexcept;
-    virtual status disconnect() noexcept override;
+    SockStatusInfo_t ConnectTo(uint32_t host, uint16_t port) noexcept;
+    SockStatusInfo_t Disconnect() noexcept override;
 
-    virtual uint32_t getHost() const override;
-    virtual uint16_t getPort() const override;
-    virtual status getStatus() const override {return client_status_;}
+    [[nodiscard]] uint32_t GetHost() const override;
+    [[nodiscard]] uint16_t GetPort() const override;
+    [[nodiscard]] SockStatusInfo_t GetStatus() const override {return m_statusClient_;}
+    [[nodiscard]] std::string GetUser() const {return m_pcDataReqest_.GetUser();};
 
-    virtual DataBuffer loadData() override;
-    DataBuffer loadDataSync();
-    void setHandler(function_handler_typedef handler);
-    void joinHandler() const;
+    DataBuffer_t LoadData() override;
+    [[nodiscard]] DataBuffer_t LoadDataSync() const;
+    void SetHandler(DataHandleFunctionClient handler);
+    void JoinHandler() const;
 
-    virtual bool sendData(const void* buffer, const size_t size) const override;
-    virtual SocketType getType() const override { return SocketType::client_socket;}
+    bool SendData(const void* buffer, size_t size) const override;
+    bool SendAuthData() const;
+    std::string GeneratePassword() const ;
+    [[nodiscard]] ConnectionType GetType() const override { return ConnectionType::Client;}
 
+    PcDataReqest m_pcDataReqest_;
+
+    bool SetDataPc();
+    void GetDataPC();
+    bool SetUserName(std::string user);
 };
 
 #endif //ALL_HEADER_CLIENT_H
