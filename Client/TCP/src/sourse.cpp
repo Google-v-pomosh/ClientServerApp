@@ -4,8 +4,10 @@
 #include <iostream>
 #include <utility>
 #include <iomanip>
+#ifdef _WIN32
+#else
 #include <ifaddrs.h>
-
+#endif
 #ifdef _WIN32
 #define WIN(exp) exp
 #define NIX(exp)
@@ -430,7 +432,7 @@ uint16_t Client::GetPort() const {
 bool Client::SetDataPc() {
     // --- Domain ---
     std::string domain;
-#ifdef _WIN32 // Для Lib
+#ifdef _WIN32 // Для Windows
     constexpr DWORD maxAdapterInfo = 16;
     IP_ADAPTER_INFO AdapterInfo[maxAdapterInfo];
     DWORD dwBufLen = sizeof(AdapterInfo);
@@ -462,7 +464,7 @@ bool Client::SetDataPc() {
 
     // --- Machine ---
     std::string machine;
-#ifdef _WIN32 // Для Lib
+#ifdef _WIN32 // Для Windows
     TCHAR info_buf[MAX_COMPUTERNAME_LENGTH + 1];
     DWORD buf_char_count = MAX_COMPUTERNAME_LENGTH + 1;
     if (GetComputerName(info_buf, &buf_char_count)) {
@@ -478,7 +480,7 @@ bool Client::SetDataPc() {
 
     // --- IP ---
     std::string ip;
-#ifdef _WIN32 // Для Lib
+#ifdef _WIN32 // Для Windows
     if (dwStatus == ERROR_SUCCESS) {
         for (PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo; pAdapterInfo != nullptr; pAdapterInfo = pAdapterInfo->Next) {
             ip = pAdapterInfo->IpAddressList.IpAddress.String;
@@ -504,6 +506,11 @@ bool Client::SetDataPc() {
     m_pcDataReqest_.SetIp(ip);
 
     // --- User ---
+    /*buf_char_count = maxInfoBufSize;
+    if (!GetUserName(info_buf, &buf_char_count)) {
+        return false;
+    }
+    std::string user = info_buf;*/
     std::string user = username_;
     m_pcDataReqest_.SetUser(user);
 
