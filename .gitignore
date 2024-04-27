@@ -4,6 +4,7 @@
 /cmake-build-debug/Server/CMakeFiles/Server.dir/build.make
 /cmake-build-debug/SQLite/CMakeFiles/SQLite.dir/build.make
 /cmake-build-debug/TCP/CMakeFiles/TCP.dir/build.make
+/cmake-build-debug/.cmake/api/v1/reply/cache-v2-f040b3024aeb143440f4.json
 /cmake-build-debug/Client/Client.cbp
 /cmake-build-debug/Client/CMakeFiles/Client.dir/cmake_clean.cmake
 /cmake-build-debug/CMakeFiles/clean-all.dir/cmake_clean.cmake
@@ -17,7 +18,9 @@
 /cmake-build-debug/Server/CMakeFiles/CMakeDirectoryInformation.cmake
 /cmake-build-debug/SQLite/CMakeFiles/CMakeDirectoryInformation.cmake
 /cmake-build-debug/TCP/CMakeFiles/CMakeDirectoryInformation.cmake
+/cmake-build-debug/.cmake/api/v1/reply/cmakeFiles-v1-5c35ed09526733f575ab.json
 /cmake-build-debug/CMakeFiles/CMakeRuleHashes.txt
+/cmake-build-debug/.cmake/api/v1/reply/codemodel-v2-3c2001b2a683d3699fcb.json
 /cmake-build-debug/SQLite/CMakeFiles/SQLite.dir/compiler_depend.internal
 /cmake-build-debug/Client/CMakeFiles/Client.dir/compiler_depend.make
 /cmake-build-debug/CMakeFiles/clean-all.dir/compiler_depend.make
@@ -49,6 +52,7 @@
 /cmake-build-debug/Server/CMakeFiles/Server.dir/includes_CXX.rsp
 /cmake-build-debug/SQLite/CMakeFiles/SQLite.dir/includes_CXX.rsp
 /cmake-build-debug/TCP/CMakeFiles/TCP.dir/includes_CXX.rsp
+/cmake-build-debug/.cmake/api/v1/reply/index-2024-04-27T10-36-54-0713.json
 /cmake-build-debug/Client/CMakeFiles/Client.dir/link.txt
 /cmake-build-debug/Server/CMakeFiles/Server.dir/link.txt
 /cmake-build-debug/SQLite/CMakeFiles/SQLite.dir/link.txt
@@ -97,6 +101,8 @@
 /cmake-build-debug/SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.obj
 /cmake-build-debug/Server/CMakeFiles/Server.dir/__/SQLite/Lib/src/sqlite3.c.obj.d
 /cmake-build-debug/SQLite/CMakeFiles/SQLite.dir/Lib/src/sqlite3.c.obj.d
+/cmake-build-debug/.cmake/api/v1/reply/target-Client-Debug-f81228749d2df12589f1.json
+/cmake-build-debug/.cmake/api/v1/reply/target-Server-Debug-b00fd32c42bce8577a95.json
 /cmake-build-debug/.cmake/api/v1/reply/target-TCP-Debug-adcdef96e6aad9cdcf19.json
 /cmake-build-debug/TCP/TCP.cbp
 /cmake-build-debug/CMakeFiles/3.28.1/CompilerIdC/a.exe
@@ -150,4 +156,3 @@
 /cmake-build-debug/CMakeFiles/TargetDirectories.txt
 /cmake-build-debug/.cmake/api/v1/query/toolchains-v1
 /cmake-build-debug/.cmake/api/v1/reply/toolchains-v1-f1b2b3b9642b509dfa7c.json
-/cmake-build-debug/
