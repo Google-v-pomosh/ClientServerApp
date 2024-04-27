@@ -5,9 +5,9 @@
 #include <iostream>
 #include <string>
 #ifdef _WIN32
-#define DB_PATH "C:/CLionProjects/SC/cmake-build-debug/Server/example.db"
+#define DB_PATH "C:/CLionProjects/ClientServerApp/Server/example.db"
 #else
-#define DB_PATH "/home/alex/CLionProjects/ClientServerApp/cmake-build-debug/Server/example.db"
+#define DB_PATH "/home/alex/CLionProjects/ClientServerApp/Server/example.db"
 #endif
 
 
