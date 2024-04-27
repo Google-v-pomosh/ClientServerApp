@@ -85,53 +85,55 @@ inline int convertError() {
 #define NIX(exp) exp
 #endif
 
-/*WIN(WSAData WinSocket::w_data;)*/
+sqlite3* dbConnection;
 
 Server::Server(const uint16_t port,
-                     KeepAliveConfig keep_alive_config,
-                     function_handler_typedef handler,
-                     function_handler_typedef_connect connect_handle,
-                     function_handler_typedef_connect disconnect_handle,
+                     ServerKeepAliveConfig keep_alive_config,
+                     DataHandleFunctionServer handler,
+                     ConnectionHandlerFunction connect_handle,
+                     ConnectionHandlerFunction disconnect_handle,
                      uint32_t thread_count
 )
         : port_(port),
-          handler_(handler),
-          connect_handle_(connect_handle),
-          disconnect_handle_(disconnect_handle),
-          thread_pool_(thread_count),
-          keep_alive_config_(keep_alive_config)
-{}
+          m_handler_(std::move(handler)),
+          m_connectHandle_(std::move(connect_handle)),
+          m_disconnectHandle_(std::move(disconnect_handle)),
+          m_threadPoolServer_(thread_count),
+          m_keepAliveConfig_(keep_alive_config)
+{
+    initializeDatabase();
+}
 
 Server::~Server() {
-    if(server_status_ == Status::up) {
-        stopServer();
+    if(m_serverStatus_ == SocketStatusInfo::Connected) {
+        StopServer();
     }
 }
 
-void Server::stopServer() {
-    thread_pool_.restartJob();
-    server_status_ = Status::close;
-    WIN(closesocket)NIX(close)(socket_server);
-    client_list_.clear();
+void Server::StopServer() {
+    m_threadPoolServer_.ResetJob();
+    m_serverStatus_ = SocketStatusInfo::Disconnected;
+    WIN(closesocket)NIX(close)(m_socketServer_);
+    m_session_list_.clear();
 }
 
-void Server::setServerHandler(Server::function_handler_typedef handler) {
-    this->handler_ = handler;
+void Server::SetServerDataHandler(Server::DataHandleFunctionServer handler) {
+    this->m_handler_ = std::move(handler);
 }
 
-uint16_t Server::setServerPort(const uint16_t port) {
+uint16_t Server::SetServerPort(const uint16_t port) {
     this->port_ = port;
-    startServer();
+    StartServer();
     return port;
 }
 
-Server::Status Server::startServer() {
-    if(server_status_ == Status::up) {
-        stopServer();
+SocketStatusInfo Server::StartServer() {
+    if(m_serverStatus_ == SocketStatusInfo::Connected) {
+        StopServer();
     }
 
 
-    SocketAddr_in address;
+    SocketAddressIn_t address;
 
 #ifdef _WIN32
     address.sin_addr.S_un.S_addr = INADDR_ANY;
@@ -143,55 +145,55 @@ Server::Status Server::startServer() {
     address.sin_family = AF_INET;
 
 #ifdef _WIN32
-    if ((socket_server = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-        return server_status_ = Status::err_socket_init;
+    if ((m_socketServer_ = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+        return m_serverStatus_ = SocketStatusInfo::InitError;
     }
     unsigned long mode = 0;
-    if (ioctlsocket(socket_server, FIONBIO, &mode) == SOCKET_ERROR) {
-        return server_status_ = Status::err_socket_init;
+    if (ioctlsocket(m_socketServer_, FIONBIO, &mode) == SOCKET_ERROR) {
+        return m_serverStatus_ = SocketStatusInfo::InitError;
     }
 #else
-    if ((socket_server = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1) {
-        return server_status_ = Status::err_socket_init;
+    if ((m_socketServer_ = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) == -1) {
+        return m_serverStatus_ = SocketStatusInfo::InitError;
     }
 #endif
 
     int flag = 1;
-    if (setsockopt(socket_server, SOL_SOCKET, SO_REUSEADDR, (char*)&flag, sizeof(flag)) == -1) {
-        return server_status_ = Status::err_socket_init;
+    if (setsockopt(m_socketServer_, SOL_SOCKET, SO_REUSEADDR, (char*)&flag, sizeof(flag)) == -1) {
+        return m_serverStatus_ = SocketStatusInfo::InitError;
     }
 
-    if (bind(socket_server, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        return server_status_ = Status::err_socket_bind;
+    if (bind(m_socketServer_, (struct sockaddr*)&address, sizeof(address)) < 0) {
+        return m_serverStatus_ = SocketStatusInfo::BindError;
     }
 
-    if (listen(socket_server, SOMAXCONN) < 0) {
-        return server_status_ = Status::err_socket_listening;
+    if (listen(m_socketServer_, SOMAXCONN) < 0) {
+        return m_serverStatus_ = SocketStatusInfo::ListeningError;
     }
 
-    server_status_ = Status::up;
-    thread_pool_.addJob([this]{handlingAcceptLoop();});
-    thread_pool_.addJob([this]{waitingDataLoop();});
+    m_serverStatus_ = SocketStatusInfo::Connected;
+    m_threadPoolServer_.AddTask([this]{HandlingAcceptLoop();});
+    m_threadPoolServer_.AddTask([this]{WaitingDataLoop();});
 
-    return server_status_;
+    return m_serverStatus_;
 }
 
 
-bool Server::ServerConnectTo(uint32_t host, uint16_t port, Server::function_handler_typedef_connect connect_handle) {
-    Socket client_socket;
-    SocketAddr_in address;
+bool Server::ServerConnectTo(uint32_t host, uint16_t port, const Server::ConnectionHandlerFunction& connect_handle) {
+    SocketHandle_t clientSocket;
+    SocketAddressIn_t address;
 
 #ifdef _WIN32
-    if ((client_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
+    if ((clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
         return false;
     }
 #else
-    if ((client_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
+    if ((clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
         return false;
     }
 #endif
 
-    new(&address) SocketAddr_in;
+    new(&address) SocketAddressIn_t;
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = host;
 
@@ -204,46 +206,46 @@ bool Server::ServerConnectTo(uint32_t host, uint16_t port, Server::function_hand
     address.sin_port = htons(port);
 
 #ifdef _WIN32
-    if(connect(client_socket, (sockaddr *)&address, sizeof(address)) == SOCKET_ERROR) {
-        closesocket(client_socket);
+    if(connect(clientSocket, (sockaddr *)&address, sizeof(address)) == SOCKET_ERROR) {
+        closesocket(clientSocket);
         return false;
     }
-    if(!enableKeepAlive(client_socket)) {
-        shutdown(client_socket, 0);
-        closesocket(client_socket);
+    if(!EnableKeepAlive(clientSocket)) {
+        shutdown(clientSocket, 0);
+        closesocket(clientSocket);
     }
 #else
-    if(connect(client_socket, (sockaddr *)&address, sizeof(address)) != 0) {
-        close(client_socket);
+    if(connect(clientSocket, (sockaddr *)&address, sizeof(address)) != 0) {
+        close(clientSocket);
         return false;
     }
-    if(!enableKeepAlive(client_socket)) {
-        shutdown(client_socket, 0);
-        close(client_socket);
+    if(!EnableKeepAlive(clientSocket)) {
+        shutdown(clientSocket, 0);
+        close(clientSocket);
     }
 #endif
 
-    std::unique_ptr<Client> client(new Client(client_socket, address));
+    std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, address));
     connect_handle(*client);
 
-    client_mutex_.lock();
-    client_list_.emplace_back(std::move(client));
-    client_mutex_.unlock();
+    m_clientMutex_.lock();
+    m_session_list_.emplace_back(std::move(client));
+    m_clientMutex_.unlock();
 
     return true;
 }
 
 void Server::ServerSendData(const void *buffer, const size_t size) {
-    for (std::unique_ptr<Client>& client : client_list_) {
-        client ->sendData(buffer, size);
+    for (std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
+        client ->SendData(buffer, size);
     }
 }
 
 bool Server::ServerSendDataBy(uint32_t host, uint16_t port, const void *buffer, const size_t size) {
     bool dataIsSended = false;
-    for(std::unique_ptr<Client>& client : client_list_) {
-        if (client->getHost() == host && client->getPort() == port){
-            client->sendData(buffer, size);
+    for(std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
+        if (client->GetHost() == host && client->GetPort() == port){
+            client->SendData(buffer, size);
             dataIsSended = true;
         }
     }
@@ -252,9 +254,9 @@ bool Server::ServerSendDataBy(uint32_t host, uint16_t port, const void *buffer, 
 
 bool Server::ServerDisconnectBy(uint32_t host, uint16_t port) {
     bool clientIsDisconnected = false;
-    for(std::unique_ptr<Client>& client : client_list_) {
-        if (client->getHost() == host && client->getPort() == port){
-            client->disconnect();
+    for(std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
+        if (client->GetHost() == host && client->GetPort() == port){
+            client->Disconnect();
             clientIsDisconnected = true;
         }
     }
@@ -262,55 +264,55 @@ bool Server::ServerDisconnectBy(uint32_t host, uint16_t port) {
 }
 
 void Server::ServerDisconnectAll() {
-    for (std::unique_ptr<Client>& client : client_list_) {
-        client->disconnect();
+    for (std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
+        client->Disconnect();
     }
 }
 
-void Server::handlingAcceptLoop() {
-    SockLen_t addrLen = sizeof(SocketAddr_in);
-    SocketAddr_in clientAddr;
+void Server::HandlingAcceptLoop() {
+    SocketLength_t addrLen = sizeof(SocketAddressIn_t);
+    SocketAddressIn_t clientAddr;
 #ifdef _WIN32
-    if(Socket clientSocket = accept(socket_server, (struct sockaddr*)&clientAddr, &addrLen);
-              clientSocket != 0 && server_status_ == Status::up)
+    if(SocketHandle_t clientSocket = accept(m_socketServer_, (struct sockaddr*)&clientAddr, &addrLen);
+              clientSocket != 0 && m_serverStatus_ == SocketStatusInfo::Connected)
     {
-        if (enableKeepAlive(clientSocket))
+        if (EnableKeepAlive(clientSocket))
         {
-            std::unique_ptr<Client> client(new Client(clientSocket, clientAddr));
-            connect_handle_(*client);
-            client_mutex_.lock();
-            client_list_.emplace_back(std::move(client));
-            client_mutex_.unlock();
+            std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, clientAddr));
+            m_connectHandle_(*client);
+            m_clientMutex_.lock();
+            m_session_list_.emplace_back(std::move(client));
+            m_clientMutex_.unlock();
         } else {
             shutdown(clientSocket, 0);
             closesocket(clientSocket);
         }
     }
 #else
-    if (Socket clientSocket = accept4(socket_server, (struct sockaddr*)&clientAddr, &addrLen, SOCK_NONBLOCK); clientSocket >= 0 && server_status_ == Status::up) {
-        if(enableKeepAlive(clientSocket)) {
-            std::unique_ptr<Client> client(new Client(clientSocket, clientAddr));
-            connect_handle_(*client);
-            client_mutex_.lock();
-            client_list_.emplace_back(std::move(client));
-            client_mutex_.unlock();
+    if (SocketHandle_t clientSocket = accept4(m_socketServer_, (struct sockaddr*)&clientAddr, &addrLen, SOCK_NONBLOCK); clientSocket >= 0 && m_serverStatus_ == SocketStatusInfo::Connected) {
+        if(EnableKeepAlive(clientSocket)) {
+            std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, clientAddr));
+            m_connectHandle_(*client);
+            m_clientMutex_.lock();
+            m_session_list_.emplace_back(std::move(client));
+            m_clientMutex_.unlock();
         } else {
             shutdown(clientSocket, 0);
             close(clientSocket);
         }
     }
 #endif
-    if(server_status_ == Status::up) {
-        thread_pool_.addJob([this]() { handlingAcceptLoop(); });
+    if(m_serverStatus_ == SocketStatusInfo::Connected) {
+        m_threadPoolServer_.AddTask([this]() { HandlingAcceptLoop(); });
     }
 }
 
-bool Server::enableKeepAlive(Socket socket) {
+bool Server::EnableKeepAlive(SocketHandle_t socket) {
     int flag = 1;
 #ifdef _WIN32
     tcp_keepalive keepAlive {1,
-                             keep_alive_config_.ka_idle * 1000,
-                             keep_alive_config_.ka_intvl * 1000};
+                             m_keepAliveConfig_.GetIdle() * 1000,
+                             m_keepAliveConfig_.GetInterval() * 1000};
     if (setsockopt(socket,
                    SOL_SOCKET,
                    SO_KEEPALIVE,
@@ -326,47 +328,65 @@ bool Server::enableKeepAlive(Socket socket) {
                  nullptr,
                  0,
                  &numberBytesReturned,
-                 0,
+                 nullptr,
                  nullptr) != 0) {
         return false;
     }
 #else
-    if(setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag)) == -1) {
+    KeepAliveProperty_t idle = m_keepAliveConfig_.GetIdle();
+    KeepAliveProperty_t interval = m_keepAliveConfig_.GetInterval();
+    KeepAliveProperty_t count = m_keepAliveConfig_.GetCount();
+
+    if(setsockopt(socket,
+                  IPPROTO_TCP,
+                  TCP_KEEPIDLE,
+                  &idle,
+                  sizeof(KeepAliveProperty_t)) == -1)
+    {
         return false;
     }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, &keep_alive_config_.ka_idle, sizeof(keep_alive_config_.ka_idle)) == -1) {
+
+    if(setsockopt(socket,
+                  IPPROTO_TCP,
+                  TCP_KEEPINTVL,
+                  &interval,
+                  sizeof(KeepAliveProperty_t)) == -1)
+    {
         return false;
     }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL, &keep_alive_config_.ka_intvl, sizeof(keep_alive_config_.ka_intvl)) == -1) {
-        return false;
-    }
-    if(setsockopt(socket, IPPROTO_TCP, TCP_KEEPCNT, &keep_alive_config_.ka_cnt, sizeof(keep_alive_config_.ka_cnt)) == -1) {
+
+    if(setsockopt(socket,
+                  IPPROTO_TCP,
+                  TCP_KEEPCNT,
+                  &count,
+                  sizeof(KeepAliveProperty_t)) == -1)
+    {
         return false;
     }
 #endif
     return true;
 }
 
-void Server::waitingDataLoop() {
+void Server::WaitingDataLoop() {
     {
-        std::lock_guard lockGuard(client_mutex_);
-        for (auto begin = client_list_.begin(), end = client_list_.end(); begin != end; ++begin) {
+        std::lock_guard lockGuard(m_clientMutex_);
+        for (auto begin = m_session_list_.begin(), end = m_session_list_.end(); begin != end; ++begin) {
             auto &client = *begin;
             if (client) {
-                if (DataBuffer dataBuffer = client->loadData(); !dataBuffer.empty()) {
-                    thread_pool_.addJob([this, data = std::move(dataBuffer), &client] {
-                        client->access_mutex_.lock();
-                        handler_(std::move(data), *client);
-                        client->access_mutex_.unlock();
+                if (DataBuffer_t dataBuffer = client->LoadData(); !dataBuffer.empty()) {
+                    m_threadPoolServer_.AddTask([this, data = std::move(dataBuffer), &client] {
+                        client->m_accessMutex_.lock();
+                        m_handler_(data, *client);
+                        client->m_accessMutex_.unlock();
                     });
-                } else if (client->client_status_ == SocketStatus::disconnected) {
-                    thread_pool_.addJob([this, &client, begin] {
-                        client->access_mutex_.lock();
-                        Client *pointer = client.release();
+                } else if (client->m_connectionStatus_ == SocketStatusInfo::Disconnected) {
+                    m_threadPoolServer_.AddTask([this, &client, begin] {
+                        client->m_accessMutex_.lock();
+                        InterfaceClientSession *pointer = client.release();
                         client = nullptr;
-                        pointer->access_mutex_.unlock();
-                        disconnect_handle_(*pointer);
-                        client_list_.erase(begin);
+                        pointer->m_accessMutex_.unlock();
+                        m_disconnectHandle_(*pointer);
+                        m_session_list_.erase(begin);
                         delete pointer;
 
                     });
@@ -374,98 +394,198 @@ void Server::waitingDataLoop() {
             }
         }
     }
-    if (server_status_ == Status::up) {
-        thread_pool_.addJob([this](){waitingDataLoop();});
+    if (m_serverStatus_ == SocketStatusInfo::Connected) {
+        m_threadPoolServer_.AddTask([this](){WaitingDataLoop();});
+    }
+}
+
+void Server::printUserInfo(const Server::UserInfo &userInfo) {
+    std::cout << "Password: " << userInfo.password_ << std::endl;
+    std::cout << "Date Today: " << userInfo.timeToday_ << std::endl;
+    std::cout << "Session Port: " << userInfo.sessionPort_ << std::endl;
+    std::cout << "Time connect: " << userInfo.connectTime_ << std::endl;
+    std::cout << "Time disconnect: " << userInfo.disconnectTime_ << std::endl;
+    std::cout << "Duration Time: " << userInfo.duration_ << std::endl;
+}
+
+void Server::printAllUsersInfo() {
+    std::lock_guard<std::mutex> lock(usersMutex);
+    for (const auto& pair : users) {
+        std::cout << "Username: " << pair.first << std::endl;
+        std::cout << "User Info:" << std::endl;
+        for (const auto& userInfo : pair.second) {
+            printUserInfo(userInfo);
+            std::cout << "-----------------------------" << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
+
+void Server::initializeDatabase() {
+    int rc;
+    char* errorMsg = nullptr;
+
+    rc = sqlite3_open("example.db", &dbConnection);
+    if (rc) {
+        std::cerr << "Can't open database: " << sqlite3_errmsg(dbConnection) << std::endl;
+        sqlite3_close(dbConnection);
+        return;
+    }
+
+    rc = sqlite3_exec(dbConnection, "BEGIN TRANSACTION", nullptr, nullptr, &errorMsg);
+    rc = sqlite3_exec(dbConnection, "PRAGMA foreign_keys = OFF", nullptr, nullptr, &errorMsg);
+    rc = sqlite3_exec(dbConnection, "CREATE TABLE IF NOT EXISTS UserInfo ("
+                                    "username TEXT,"
+                                    "password TEXT,"
+                                    "sessionPort INTEGER,"
+                                    "connectTime TEXT,"
+                                    "disconnectTime TEXT,"
+                                    "duration TEXT,"
+                                    "timeToday TEXT"
+                                    ")", nullptr, nullptr, &errorMsg);
+    rc = sqlite3_exec(dbConnection, "COMMIT", nullptr, nullptr, &errorMsg);
+
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << errorMsg << std::endl;
+        sqlite3_free(errorMsg);
+    } else {
+        std::cout << "Database initialized successfully." << std::endl;
+    }
+}
+
+void Server::writeToDatabase(const Server::UserInfo &userInfo) {
+    int rc;
+    char* errorMsg = nullptr;
+
+    std::string insertSQL = "INSERT INTO UserInfo (username, password, sessionPort, connectTime, disconnectTime, duration, timeToday) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+    sqlite3_stmt* stmt;
+
+    rc = sqlite3_prepare_v2(dbConnection, insertSQL.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to prepare SQL statement: " << sqlite3_errmsg(dbConnection) << std::endl;
+        return;
+    }
+
+    rc = sqlite3_bind_text(stmt, 1, userInfo.username_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(stmt, 2, userInfo.password_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_int(stmt, 3, userInfo.sessionPort_);
+    rc = sqlite3_bind_text(stmt, 4, userInfo.connectTime_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(stmt, 5, userInfo.disconnectTime_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(stmt, 6, userInfo.duration_.c_str(), -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text(stmt, 7, userInfo.timeToday_.c_str(), -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        std::cerr << "Error executing SQL statement: " << sqlite3_errmsg(dbConnection) << std::endl;
+    } else {
+        std::cout << "Data written to database successfully." << std::endl;
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+void Server::clearUser(const std::string &username) {
+    std::lock_guard<std::mutex> lock(usersMutex);
+    auto it = users.find(username);
+    if (it != users.end()) {
+        it->second.clear();
+        users.erase(it);
     }
 }
 
 
-Server::Client::Client(Socket socket, SocketAddr_in address)
-        : address_(address), client_socket_(socket) {}
+Server::InterfaceClientSession::InterfaceClientSession(SocketHandle_t socket, SocketAddressIn_t address)
+        : m_address_(address), m_socketDescriptor_(socket){
+    SetFirstConnectionTime();
+}
 
 
-Server::Client::~Client(){
+Server::InterfaceClientSession::~InterfaceClientSession(){
+    InterfaceClientSession::Disconnect();
 #ifdef _WIN32
-    if(client_socket_ == INVALID_SOCKET) {
+    if(m_socketDescriptor_ == INVALID_SOCKET) {
         return;
     }
-    shutdown(client_socket_, SD_BOTH);
-    closesocket(client_socket_);
+    shutdown(m_socketDescriptor_, SD_BOTH);
+    closesocket(m_socketDescriptor_);
 #else
-    if(client_socket_ == -1) {
+    if(m_socketDescriptor_ == -1) {
         return;
     }
-    shutdown(client_socket_, SD_BOTH);
-    close(client_socket_);
+    shutdown(m_socketDescriptor_, SD_BOTH);
+    close(m_socketDescriptor_);
 #endif
 }
 
-ClientBase::status Server::Client::disconnect() {
-    client_status_ = status::disconnected;
+TCPInterfaceBase::SockStatusInfo_t Server::InterfaceClientSession::Disconnect() {
+    SetLastDisconnectionTime();
+    m_connectionStatus_ = SockStatusInfo_t::Disconnected;
 #ifdef _WIN32
-    if (client_socket_ == INVALID_SOCKET) {
-        return client_status_;
+    if (m_socketDescriptor_ == INVALID_SOCKET) {
+        return m_connectionStatus_;
     }
-    shutdown(client_socket_, SD_BOTH);
-    closesocket(client_socket_);
-    client_socket_ = INVALID_SOCKET;
+    shutdown(m_socketDescriptor_, SD_BOTH);
+    closesocket(m_socketDescriptor_);
+    m_socketDescriptor_ = INVALID_SOCKET;
 #else
-    if (client_socket_ == -1) {
-        return client_status_;
+    if (m_socketDescriptor_ == -1) {
+        return m_connectionStatus_;
     }
-    shutdown(client_socket_, SD_BOTH);
-    close(client_socket_);
-    client_socket_ = -1;
+    shutdown(m_socketDescriptor_, SD_BOTH);
+    close(m_socketDescriptor_);
+    m_socketDescriptor_ = -1;
 #endif
-    return client_status_;
+    m_lastDisconnectionTime_ = std::chrono::system_clock::now();
+    return m_connectionStatus_;
 }
 
-bool Server::Client::sendData(const void *buffer, const size_t size) const {
-    if(client_status_ != SocketStatus::connected) {
+bool Server::InterfaceClientSession::SendData(const void *buffer, const size_t size) const {
+    if(m_connectionStatus_ != SocketStatusInfo::Connected) {
         return false;
     }
     void* sendBuffer = malloc(size + sizeof (uint32_t));
     memcpy(reinterpret_cast<char*>(sendBuffer) + sizeof (uint32_t ), buffer, size);
     *reinterpret_cast<uint32_t*>(sendBuffer) = size;
-    if(send(client_socket_, reinterpret_cast<char*>(sendBuffer), size + sizeof (int), 0) < 0){
+    if(send(m_socketDescriptor_, reinterpret_cast<char*>(sendBuffer), static_cast<int>(size + sizeof(uint32_t)), 0) < 0){
         return false;
     }
     free(sendBuffer);
     return true;
 }
 
-DataBuffer Server::Client::loadData() {
-    if (client_status_ != SocketStatus::connected) {
-        return DataBuffer();
+DataBuffer_t Server::InterfaceClientSession::LoadData() {
+    if (m_connectionStatus_ != SocketStatusInfo::Connected) {
+        return DataBuffer_t();
     }
-    DataBuffer dataBuffer;
+    DataBuffer_t dataBuffer;
     uint32_t size;
     int error = 0;
 #ifdef _WIN32
-    if (u_long t = true; SOCKET_ERROR == ioctlsocket(client_socket_, FIONBIO, &t)) {
-        return DataBuffer();
+    if (u_long t = true; SOCKET_ERROR == ioctlsocket(m_socketDescriptor_, FIONBIO, &t)) {
+        return DataBuffer_t();
     }
-    int answer = recv(client_socket_, (char *)&size, sizeof(size), 0);
-    if (u_long t = false; SOCKET_ERROR == ioctlsocket(client_socket_, FIONBIO, &t)){
-        return DataBuffer();
+    int answer = recv(m_socketDescriptor_, (char *)&size, sizeof(size), 0);
+    if (u_long t = false; SOCKET_ERROR == ioctlsocket(m_socketDescriptor_, FIONBIO, &t)){
+        return DataBuffer_t();
     }
 #else
-    int answer = recv(client_socket_, (char *)&size, sizeof(size), MSG_DONTWAIT);
+    int answer = recv(m_socketDescriptor_, (char *)&size, sizeof(size), MSG_DONTWAIT);
 #endif
     if (!answer) {
-        disconnect();
-        return DataBuffer();
+        Disconnect();
+        return DataBuffer_t();
     } else if (answer == -1) {
         WIN (
                 error = convertError();
                 if (!error) {
-                    SockLen_t length = sizeof (error);
-                    getsockopt(client_socket_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
+                    SocketLength_t length = sizeof (error);
+                    getsockopt(m_socketDescriptor_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 }
         )
         NIX (
-                SockLen_t length = sizeof (error);
-                getsockopt(client_socket_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
+                SocketLength_t length = sizeof (error);
+                getsockopt(m_socketDescriptor_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 if (!error) {
                     error = errno;
                 }
@@ -478,43 +598,173 @@ DataBuffer Server::Client::loadData() {
         case ETIMEDOUT:
         case ECONNRESET:
         case EPIPE:
-            disconnect();
+            Disconnect();
             [[fallthrough]];
         case EAGAIN:
-            return DataBuffer ();
+            return DataBuffer_t();
         default:
-            disconnect();
+            Disconnect();
             std::cerr << "Unhandled error!\n"
                       << "Code: " << error << " Error: " << std::strerror(error) << '\n';
-            return DataBuffer();
+            return DataBuffer_t();
     }
 
     if (!size) {
-        return DataBuffer();
+        return DataBuffer_t();
     }
 
-    dataBuffer.resize(size);
-    int recvResult = recv(client_socket_, reinterpret_cast<char*>(dataBuffer.data()), dataBuffer.size(), 0);
+    dataBuffer.resize(static_cast<std::vector<DataBuffer_t>::size_type>(size));
+    int recvResult = recv(m_socketDescriptor_, reinterpret_cast<char*>(dataBuffer.data()), static_cast<int>(dataBuffer.size()), 0);
     if (recvResult < 0) {
         int err = errno;
         std::cerr << "Error receiving data: " << std::strerror(err) << '\n';
-        disconnect();
-        return DataBuffer();
+        Disconnect();
+        return DataBuffer_t();
     }
 
     return dataBuffer;
 }
 
-uint32_t Server::Client::getHost() const {
+uint32_t Server::InterfaceClientSession::GetHost() const {
     return
             WIN (
-                    address_.sin_addr.S_un.S_addr
+                    m_address_.sin_addr.S_un.S_addr
             )
             NIX (
-                    address_.sin_addr.s_addr
+                    m_address_.sin_addr.s_addr
             );
 }
 
-uint16_t Server::Client::getPort() const {
-    return address_.sin_port;
+uint16_t Server::InterfaceClientSession::GetPort() const {
+    return m_address_.sin_port;
 }
+
+std::string Server::InterfaceClientSession::ConnectionTimes(const InterfaceClientSession& client, Server& server) {
+    std::chrono::system_clock::time_point firstConnectionTime = client.GetFirstConnectionTime();
+    std::chrono::system_clock::time_point lastDisconnectionTime = client.GetLastDisconnectionTime();
+
+    std::chrono::seconds duration = std::chrono::duration_cast<std::chrono::seconds>(lastDisconnectionTime - firstConnectionTime);
+
+    auto hours = std::chrono::duration_cast<std::chrono::hours>(duration);
+    duration -= hours;
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
+    duration -= minutes;
+    auto seconds = duration;
+
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << hours.count() << ":"
+        << std::setfill('0') << std::setw(2) << minutes.count() << ":"
+        << std::setfill('0') << std::setw(2) << seconds.count();
+
+    return oss.str();
+}
+
+
+
+bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& data,Server::InterfaceClientSession& client, Server& server) {
+    std::string timeStr = client.GetDayNow();
+    uint16_t port = client.GetPort();
+    std::string connectionTime = client.GetConnectionTime();
+
+    std::string receivedMessageAll(data.begin(), data.end());
+    receivedMessageAll.erase(std::remove(receivedMessageAll.begin(), receivedMessageAll.end(), '\0'), receivedMessageAll.end());
+
+    std::string receivedMessage = receivedMessageAll.substr(0);
+
+    size_t colonPos = receivedMessage.find(':');
+    if (colonPos == std::string::npos){
+        /*std::cerr << "User don`t detected" << std::endl;*/
+        return false;
+    }
+    std::string username = receivedMessage.substr(0, colonPos);
+    client.username_ = username;
+    std::string password = receivedMessage.substr(colonPos + 1);
+
+    std::lock_guard<std::mutex> lock(server.usersMutex);
+
+    auto it = server.users.find(username);
+    if(it == server.users.end()){
+        server.users.emplace(username, std::vector<UserInfo>{UserInfo(username,password,port,connectionTime,"", "", timeStr)});
+        std::cout << "User '" << username << "' has been assigned port: " << client.GetPort() << std::endl;
+    }
+    else {
+        it->second.emplace_back(username,password,port,connectionTime,"", "", timeStr);
+        std::cout << "User '" << username << "' authenticated successfully" << std::endl;
+    }
+    return true;
+}
+
+void Server::InterfaceClientSession::OnDisconnect(const InterfaceClientSession& client, Server& server) {
+    std::string username = client.GetUserNameIn();
+    uint16_t port = client.GetPort();
+    std::string sumDuration = Server::InterfaceClientSession::ConnectionTimes(client, server);
+    std::string lastConnection = Server::InterfaceClientSession::GetDisconnectionTime();
+
+    std::lock_guard<std::mutex> lock(server.usersMutex);
+    auto it = server.users.find(username);
+    if (it != server.users.end()) {
+        for (auto& userInfo : it->second) {
+            if (userInfo.sessionPort_ == port){
+                userInfo.duration_ = sumDuration;
+                userInfo.disconnectTime_ = lastConnection;
+                break;
+            }
+        }
+    }
+}
+
+void Server::InterfaceClientSession::WriteToDB(const InterfaceClientSession& client, Server& server) {
+    std::string username = client.GetUserNameIn();
+    auto it = server.users.find(username);
+
+    if (it != server.users.end()) {
+        for (const auto& userInfo : it->second) {
+            server.writeToDatabase(userInfo);
+        }
+        server.clearUser(username);
+    }
+}
+
+std::string Server::InterfaceClientSession::GetDayNow() {
+    std::chrono::system_clock::time_point lastRequestTime = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(lastRequestTime);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d", std::localtime(&t));
+    return std::string{buft};
+}
+
+std::string Server::InterfaceClientSession::GetConnectionTime() {
+    std::chrono::system_clock::time_point timeConnection = GetFirstConnectionTime();
+    std::time_t t = std::chrono::system_clock::to_time_t(timeConnection);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+    return std::string{buft};
+}
+
+std::string Server::InterfaceClientSession::GetDisconnectionTime() {
+    std::chrono::system_clock::time_point timeConnection = GetLastDisconnectionTime();
+    std::time_t t = std::chrono::system_clock::to_time_t(timeConnection);
+    char buft[80];
+    std::strftime(buft, sizeof(buft), "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+    return std::string{buft};
+}
+
+ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
+                                               KeepAliveProperty_t interval,
+                                               KeepAliveProperty_t count
+                                               )
+                                               :    idle_(idle),
+                                                    interval_(interval),
+                                                    count_(count)
+                                               {}
+
+Server::UserInfo::UserInfo(std::string username, std::string pass, uint16_t port, std::string connectTime,
+                           std::string disconnectTime, std::string duration, std::string timeToday)
+        : username_(std::move(username)),
+          password_(std::move(pass)),
+          sessionPort_(port),
+          connectTime_(std::move(connectTime)),
+          disconnectTime_(std::move(disconnectTime)),
+          duration_(std::move(duration)),
+          timeToday_(std::move(timeToday))
+{}

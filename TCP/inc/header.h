@@ -22,135 +22,126 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include <malloc.h>
+#include <cstdlib>
 #include <condition_variable>
 
 
 #define HARDWARE_CONCURRENCY std::thread::hardware_concurrency()
 
 
-#ifdef _WIN32 // Windows
-typedef int SockLen_t;
-typedef SOCKADDR_IN SocketAddr_in;
-typedef SOCKET Socket;
-typedef u_long ka_prop_t;
+#ifdef _WIN32 // Lib
+typedef int SocketLength_t;
+typedef SOCKADDR_IN SocketAddressIn_t;
+typedef SOCKET SocketHandle_t;
+typedef u_long KeepAliveProperty_t;
 #else   //*nix
-typedef socklen_t SockLen_t;
-typedef struct sockaddr_in SocketAddr_in;
-typedef int Socket;
-typedef int ka_prop_t;
+typedef socklen_t SocketLength_t;
+typedef struct sockaddr_in SocketAddressIn_t;
+typedef int SocketHandle_t;
+typedef int KeepAliveProperty_t;
 #endif
 
-constexpr uint32_t LOCALHOST_IP = 0x0100007f;
+constexpr uint32_t kLocalhostIP = 0x0100007f;
 
-enum class SocketStatus : uint8_t {
-    connected = 0,
-    err_socket_init = 1,
-    err_socket_bind = 2,
-    err_socket_connect = 3,
-    disconnected = 4
+enum class SocketStatusInfo : uint8_t {
+    Connected       = 0,
+    InitError       = 1,
+    BindError       = 2,
+    ConnectError    = 3,
+    KeepAliveError  = 4,
+    ListeningError  = 5,
+    Disconnected    = 6
 };
 
-typedef std::vector<uint8_t> DataBuffer;
+typedef std::vector<uint8_t> DataBuffer_t;
 
-enum class SocketType : uint8_t {
-    client_socket = 0,
-    server_socket = 1
+enum class ConnectionType : uint8_t {
+    Client = 0,
+    Server = 1
 };
 
-class ThreadPool {
+class NetworkThreadPool {
 public:
 
-    void start(uint32_t thread_count = HARDWARE_CONCURRENCY){
-        if (!terminate_pool_) {
-            return;
-        }
-        terminate_pool_ = false;
-        setupThreadPool(thread_count);
-    };
-    void stop();
+    void StartThreads(uint32_t thread_count = HARDWARE_CONCURRENCY);
+    void StopThreads();
+
+    void JoinThreads();
+
+    void ResetJob();
+
+    [[nodiscard]] uint32_t GetThreadCount() const;
 
     template<typename A>
-    void addJob(A work) {
-        if(terminate_pool_) {
+    void AddTask(A work) {
+        if(m_terminatePool_) {
             return;
         }
         {
-            std::unique_lock lock(queue_mutex_);
-            queue_work_.push(std::function<void()>(work));
+            std::unique_lock lock(m_queueMutex_);
+            m_queueWork_.push(std::function<void()>(work));
         }
-        condition_variable_.notify_all();
+        m_conditionVariable_.notify_all();
     }
 
     template<typename A, typename ... Arg>
-    void addJob(const A& work, const Arg&... args) {
-        addJob([work, args...]{work(args...);});
+    void AddTask(const A& work, const Arg&... args) {
+        AddTask([work, args...]{work(args...);});
     }
 
-    void join();
-
-    uint32_t getThreadCount() const;
-
-    void restartJob();
-
-    ThreadPool(uint32_t thread_count = HARDWARE_CONCURRENCY) { setupThreadPool(thread_count);};
-    ~ThreadPool();
+    explicit NetworkThreadPool(uint32_t thread_count = HARDWARE_CONCURRENCY) { ConfigureThreadPool(thread_count);};
+    ~NetworkThreadPool();
 
 private:
-    void setupThreadPool(uint32_t thread_count);
-    void workerLoop();
+    void ConfigureThreadPool(uint32_t thread_count);
+    void ThreadWorkerLoop();
 
-    std::vector<std::thread> thread_pool_;
-    std::queue<std::function<void()>> queue_work_;
-    std::mutex queue_mutex_;
-    std::condition_variable condition_variable_;
-    std::atomic<bool> terminate_pool_ = false;
+    std::vector<std::thread> m_threadPool_;
+    std::queue<std::function<void()>> m_queueWork_;
+    std::mutex m_queueMutex_;
+    std::condition_variable m_conditionVariable_;
+    std::atomic<bool> m_terminatePool_ = false;
 
 };
 
-#ifdef _WIN32 //Windows
+#ifdef _WIN32 //Lib
 namespace {
-    class WinSocket {
+    class WindowsSocketInitializer {
     public:
-        WinSocket() {
-            if(WSAStartup(MAKEWORD(2, 2), &w_data) != 0) {
+        WindowsSocketInitializer() {
+            if (WSAStartup(MAKEWORD(2, 2), &m_wsaData_) != 0) {
                 std::cerr << "WSAStartUp is faled\n";
             }
-#ifndef DEBUG
-            std::cout << "WinSocket init\n";
-#endif
         }
-
-        ~WinSocket() {
-#ifndef DEBUG
-            std::cout << "WinSocket close\n";
-#endif
+        ~WindowsSocketInitializer(){
             WSACleanup();
         }
 
     private:
-        static WSAData w_data;
-
+        static WSAData m_wsaData_;
     };
 
-    WSAData WinSocket::w_data;
-    static inline WinSocket winsock_initer;
+    WSAData WindowsSocketInitializer::m_wsaData_;
+    inline WindowsSocketInitializer winsockInitializer;
 }
-#else
-//TODO *nix
 #endif
 
-class ClientBase {
+class TCPInterfaceBase {
 public:
-    typedef SocketStatus status;
-    virtual ~ClientBase() {};
-    virtual status disconnect() = 0;
-    virtual bool sendData(const void* buffer,const size_t size) const = 0;
-    virtual DataBuffer loadData() = 0;
-    virtual status getStatus() const = 0;
-    virtual uint32_t getHost() const = 0;
-    virtual uint16_t getPort() const = 0;
-    virtual SocketType getType() const = 0;
+    typedef SocketStatusInfo SockStatusInfo_t;
+    virtual ~TCPInterfaceBase() = default;
+
+    virtual SockStatusInfo_t Disconnect() = 0;
+    [[nodiscard]] virtual SockStatusInfo_t GetStatus() const = 0;
+
+    virtual bool SendData(const void* buffer,size_t size) const = 0;
+
+    virtual DataBuffer_t LoadData() = 0;
+
+    [[nodiscard]] virtual uint32_t GetHost() const = 0;
+    [[nodiscard]] virtual uint16_t GetPort() const = 0;
+
+    [[nodiscard]] virtual ConnectionType GetType() const = 0;
 };
 
 

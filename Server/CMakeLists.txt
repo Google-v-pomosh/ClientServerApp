@@ -3,14 +3,17 @@ project(Server)
 
 set(CMAKE_CXX_STANDARD 17)
 
-file(GLOB SOURCES "main.cpp" "../TCP/src/*.cpp" "../Server/TCP/src/*.cpp")
+file(GLOB SOURCES   "main.cpp"
+                    "../TCP/src/*.cpp"
+                    "../Server/TCP/src/*.cpp"
+                    "../SQLite/Lib/src/sqlite3.c")
 
-add_executable(Server ${SOURCES}
-        ../TCP/inc/header.h)
+add_executable(Server ${SOURCES})
 
 if(WIN32)
-    target_link_libraries(Server wsock32 ws2_32)
+    target_link_libraries(Server PRIVATE wsock32 ws2_32)
 endif()
 
+target_include_directories(Server PRIVATE ../SQLite/Lib/inc)
 target_include_directories(Server PRIVATE ../TCP/inc)
 target_include_directories(Server PRIVATE ../Server/TCP/inc)
