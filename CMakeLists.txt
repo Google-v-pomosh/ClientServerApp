@@ -5,8 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(TCP)
 add_subdirectory(Client)
+add_subdirectory(Client2)
 add_subdirectory(Server)
 add_subdirectory(SQLite)
+#[[add_subdirectory(Lib)]]
 
 #[[include_directories(SQLite/Lib/inc)]]
 

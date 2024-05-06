@@ -34,8 +34,21 @@
 #include <cstdlib>
 #endif
 
+#ifdef _WIN32
+#define DB_PATH "C:/CLionProjects/ClientServerApp/Server/example.db"
+#else
+#define DB_PATH "/home/alex/CLionProjects/ClientServerApp/Server/example.db"
+#endif
+
+
 #include "../../../SQLite/Lib/inc/sqlite3.h"
 #include "../../../TCP/inc/header.h"
+/*#include "../../../Lib/sha256/inc/sha256.h"*/
+
+#define SHA256_DIGEST_SIZE 32
+
+typedef unsigned char BYTE;
+typedef unsigned int  WORDL;
 
 class ServerKeepAliveConfig {
 public:
@@ -61,6 +74,29 @@ class Database;
 class Server {
 public:
     class InterfaceClientSession : public TCPInterfaceBase {
+    private:
+        typedef struct {
+            BYTE data[64];
+            WORDL datalen;
+            unsigned long long bitlen;
+            WORDL state[8];
+        } SHA256_CTX;
+
+        friend class Server;
+        std::mutex m_accessMutex_;
+        SocketAddressIn_t m_address_;
+        SocketHandle_t m_socketDescriptor_;
+        SockStatusInfo_t m_connectionStatus_ = SockStatusInfo_t::Connected;
+
+        std::chrono::system_clock::time_point m_firstConnectionTime_;
+        std::chrono::system_clock::time_point m_lastDisconnectionTime_;
+
+
+        void SetFirstConnectionTime() { m_firstConnectionTime_ = std::chrono::system_clock::now(); }
+        void SetLastDisconnectionTime() { m_lastDisconnectionTime_ = std::chrono::system_clock::now(); }
+
+        std::string username_;
+
     public:
 
         InterfaceClientSession(SocketHandle_t socket, SocketAddressIn_t address);
@@ -89,22 +125,12 @@ public:
         std::string GetDisconnectionTime();
         static void WriteToDB(const InterfaceClientSession& client, Server& server);
 
+        void sha256_transform(SHA256_CTX *ctx, const BYTE data[]);
+        void sha256_init(SHA256_CTX *ctx);
+        void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
+        void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
 
-    private:
-        friend class Server;
-        std::mutex m_accessMutex_;
-        SocketAddressIn_t m_address_;
-        SocketHandle_t m_socketDescriptor_;
-        SockStatusInfo_t m_connectionStatus_ = SockStatusInfo_t::Connected;
-
-        std::chrono::system_clock::time_point m_firstConnectionTime_;
-        std::chrono::system_clock::time_point m_lastDisconnectionTime_;
-
-
-        void SetFirstConnectionTime() { m_firstConnectionTime_ = std::chrono::system_clock::now(); }
-        void SetLastDisconnectionTime() { m_lastDisconnectionTime_ = std::chrono::system_clock::now(); }
-
-        std::string username_;
+        bool checkHash(const std::string& content, const std::string& receivedHash);
 
     };
 

@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB SOURCES   "main.cpp"
                     "TCP/src/*.cpp"
-                    "../TCP/src/*.cpp")
+                    "../TCP/src/*.cpp"
+                    "../Lib/sha256/src/*.c")
 
 
 add_executable(Client ${SOURCES})
@@ -16,6 +17,6 @@ endif()
 
 target_include_directories(Client PRIVATE ../TCP/inc)
 target_include_directories(Client PRIVATE ../Client/TCP/inc)
-
+target_include_directories(Client PRIVATE ../Lib/sha256/inc)
 
 target_compile_definitions(Client PRIVATE DEBUG)

@@ -4,6 +4,7 @@
 #include "sqlite3.h"
 #include <iostream>
 #include <string>
+
 #ifdef _WIN32
 #define DB_PATH "C:/CLionProjects/ClientServerApp/Server/example.db"
 #else

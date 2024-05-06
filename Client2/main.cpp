@@ -6,15 +6,6 @@
 
 std::atomic<bool> exitRequested(false);
 
-std::string getHostStr(uint32_t ip, uint16_t port) {
-    return  std::string() +
-            std::to_string(int(reinterpret_cast<char*>(&ip)[0])) + '.' +
-            std::to_string(int(reinterpret_cast<char*>(&ip)[1])) + '.' +
-            std::to_string(int(reinterpret_cast<char*>(&ip)[2])) + '.' +
-            std::to_string(int(reinterpret_cast<char*>(&ip)[3])) + '.' +
-            std::to_string(port);
-}
-
 void runClient(Client& client) {
     if (!client.SetDataPc()) {
         std::cerr << "Failed to set PC data\n";
@@ -84,7 +75,7 @@ int main() {
 
     NetworkThreadPool m_clientThreadPool;
 
-    Client firstClient(&m_clientThreadPool, "Alex");
+    Client firstClient(&m_clientThreadPool, "Anton");
 
     std::thread clientInputThread(clientIOThread, std::ref(firstClient));
     std::thread runThread1(runClient, std::ref(firstClient));

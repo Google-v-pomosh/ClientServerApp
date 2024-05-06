@@ -157,3 +157,5 @@
 /cmake-build-debug/.cmake/api/v1/query/toolchains-v1
 /cmake-build-debug/.cmake/api/v1/reply/toolchains-v1-f1b2b3b9642b509dfa7c.json
 /cmake-build-debug/
+/Server/example.db-journal
+/.idea/dataSources.xml

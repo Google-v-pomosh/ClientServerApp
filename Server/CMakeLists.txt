@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 file(GLOB SOURCES   "main.cpp"
                     "../TCP/src/*.cpp"
                     "../Server/TCP/src/*.cpp"
-                    "../SQLite/Lib/src/sqlite3.c")
+                    "../SQLite/Lib/src/sqlite3.c"
+                    "../Lib/sha256/src/sha256.c")
 
 add_executable(Server ${SOURCES})
 

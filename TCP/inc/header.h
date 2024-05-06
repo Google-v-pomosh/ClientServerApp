@@ -60,6 +60,11 @@ enum class ConnectionType : uint8_t {
     Server = 1
 };
 
+struct MessageTypes {
+    [[maybe_unused]] static const int SendAuthenticationUser = 0;
+    static const int SendMessageTo = 1;
+};
+
 class NetworkThreadPool {
 public:
 
