@@ -278,7 +278,7 @@ DataBuffer_t Client::LoadData() {
 
         switch (error) {
             case 0:
-                break;
+                return DataBuffer_t();
             case ETIMEDOUT:
             case ECONNRESET:
             case EPIPE:
