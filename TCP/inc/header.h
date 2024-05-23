@@ -86,7 +86,7 @@ public:
             std::unique_lock lock(m_queueMutex_);
             m_queueWork_.push(std::function<void()>(work));
         }
-        m_conditionVariable_.notify_all();
+        m_conditionVariable_.notify_one();
     }
 
     template<typename A, typename ... Arg>

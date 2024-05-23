@@ -19,6 +19,7 @@ std::atomic<bool> exitRequested(false);
 Server server(8081,
               {1, 1, 1},
               [](DataBuffer_t dataBuffer, Server::InterfaceClientSession& client){
+    std::cout << "Hello" << std::endl;
 #ifdef DEGUGLOG
                   std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
 #endif
@@ -52,13 +53,28 @@ void serverIOThread(Server &server) {
 
 int main() {
 
+    using namespace std::chrono_literals;
     std::cout << "Hello, World, Iam Server" << std::endl;
 
-    if (server.StartServer() == SocketStatusInfo::Connected) {
+    try {
+        if(server.StartServer() == SocketStatusInfo::Connected) {
+            std::cout<<"Server listen on port: " << server.GetServerPort() << std::endl
+                     <<"Server handling thread pool size: " << server.GetThreadExecutor().GetThreadCount() << std::endl;
+            server.JoinLoop();
+            return EXIT_SUCCESS;
+        } else {
+            std::cout<<"Server start error! Error code:"<< int(server.GetServerStatus()) <<std::endl;
+            return EXIT_FAILURE;
+        }
+    } catch (std::exception& except) {
+        std::cerr << except.what();
+        return EXIT_FAILURE;
+    }
+    /*if (server.StartServer() == SocketStatusInfo::Connected) {
         std::cout << "Server listening on port: " << server.GetServerPort() << '\n'
                   << "Server handling thread pool size: " << server.GetThreadExecutor().GetThreadCount() << std::endl;
 
-        std::thread serverThread(serverIOThread, std::ref(server));
+        //std::thread serverThread(serverIOThread, std::ref(server));
 
         try {
             server.JoinLoop();
@@ -67,10 +83,10 @@ int main() {
             server.StopServer();
         }
 
-        serverThread.join();
+        //serverThread.join();
         return EXIT_SUCCESS;
     } else {
         std::cerr << "Failed to start server! Error code: " << static_cast<int>(server.GetServerStatus()) << std::endl;
         return EXIT_FAILURE;
-    }
+    }*/
 }

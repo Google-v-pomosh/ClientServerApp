@@ -7,6 +7,7 @@
 
 
 #ifdef _WIN32
+#include <mstcpip.h>
 #define WIN(exp) exp
 #define NIX(exp)
 
@@ -117,7 +118,7 @@ Server::Server(const uint16_t port,
                      DataHandleFunctionServer handler,
                      ConnectionHandlerFunction connect_handle,
                      ConnectionHandlerFunction disconnect_handle,
-                     uint32_t thread_count
+                     unsigned int thread_count
 )
         : port_(port),
           m_handler_(std::move(handler)),
@@ -153,10 +154,10 @@ uint16_t Server::SetServerPort(const uint16_t port) {
 }
 
 SocketStatusInfo Server::StartServer() {
+    int flag;
     if(m_serverStatus_ == SocketStatusInfo::Connected) {
         StopServer();
     }
-
 
     SocketAddressIn_t address;
 
@@ -173,8 +174,8 @@ SocketStatusInfo Server::StartServer() {
     if ((m_socketServer_ = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
         return m_serverStatus_ = SocketStatusInfo::InitError;
     }
-    unsigned long mode = 0;
-    if (ioctlsocket(m_socketServer_, FIONBIO, &mode) == SOCKET_ERROR) {
+
+    if (unsigned long mode = 0; ioctlsocket(m_socketServer_, FIONBIO, &mode) == SOCKET_ERROR) {
         return m_serverStatus_ = SocketStatusInfo::InitError;
     }
 #else
@@ -183,16 +184,14 @@ SocketStatusInfo Server::StartServer() {
     }
 #endif
 
-    int flag = 1;
-    if (setsockopt(m_socketServer_, SOL_SOCKET, SO_REUSEADDR, (char*)&flag, sizeof(flag)) == -1) {
-        return m_serverStatus_ = SocketStatusInfo::InitError;
-    }
-
-    if (bind(m_socketServer_, (struct sockaddr*)&address, sizeof(address)) < 0) {
+    if(flag = true;
+        (setsockopt(m_socketServer_, SOL_SOCKET, SO_REUSEADDR, WIN((char*))&flag, sizeof(flag)) == -1) ||
+        (bind(m_socketServer_, (struct sockaddr*)&address, sizeof(address)) WIN(== SOCKET_ERROR)NIX(< 0))){
         return m_serverStatus_ = SocketStatusInfo::BindError;
     }
 
-    if (listen(m_socketServer_, SOMAXCONN) < 0) {
+
+    if (listen(m_socketServer_, SOMAXCONN) WIN(== SOCKET_ERROR)NIX(< 0)) {
         return m_serverStatus_ = SocketStatusInfo::ListeningError;
     }
 
@@ -254,21 +253,21 @@ bool Server::ServerConnectTo(uint32_t host, uint16_t port, const Server::Connect
     connect_handle(*client);
 
     m_clientMutex_.lock();
-    m_session_list_.emplace_back(std::move(client));
+    m_session_list_.emplace(std::move(client));
     m_clientMutex_.unlock();
 
     return true;
 }
 
 void Server::ServerSendData(const void *buffer, const size_t size) {
-    for (std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
+    for (const std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
         client ->SendData(buffer, size);
     }
 }
 
 bool Server::ServerSendDataBy(uint32_t host, uint16_t port, const void *buffer, const size_t size) {
     bool dataIsSended = false;
-    for(std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
+    for(const std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
         if (client->GetHost() == host && client->GetPort() == port){
             client->SendData(buffer, size);
             dataIsSended = true;
@@ -279,7 +278,7 @@ bool Server::ServerSendDataBy(uint32_t host, uint16_t port, const void *buffer, 
 
 bool Server::ServerDisconnectBy(uint32_t host, uint16_t port) {
     bool clientIsDisconnected = false;
-    for(std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
+    for(const std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
         if (client->GetHost() == host && client->GetPort() == port){
             client->Disconnect();
             clientIsDisconnected = true;
@@ -289,13 +288,14 @@ bool Server::ServerDisconnectBy(uint32_t host, uint16_t port) {
 }
 
 void Server::ServerDisconnectAll() {
-    for (std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
+    for (const std::unique_ptr<InterfaceClientSession>& client : m_session_list_) {
         client->Disconnect();
     }
 }
 
 void Server::HandlingAcceptLoop() {
     //TODO
+    std::cout << __FUNCTION__  << std::endl;
     SocketLength_t addrLen = sizeof(SocketAddressIn_t);
     SocketAddressIn_t clientAddr;
 #ifdef _WIN32
@@ -307,7 +307,7 @@ void Server::HandlingAcceptLoop() {
             std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, clientAddr));
             m_connectHandle_(*client);
             m_clientMutex_.lock();
-            m_session_list_.emplace_back(std::move(client));
+            m_session_list_.emplace(std::move(client));
             m_clientMutex_.unlock();
         } else {
             shutdown(clientSocket, 0);
@@ -393,13 +393,13 @@ bool Server::EnableKeepAlive(SocketHandle_t socket) {
     return true;
 }
 
-/*void Server::WaitingDataLoop() {
-        std::cout << __FUNCTION__  << std::endl;
+void Server::WaitingDataLoop() {
+/*        std::cout << __FUNCTION__  << std::endl;
         std::lock_guard lockGuard(m_clientMutex_);
         for (auto begin = m_session_list_.begin(), end = m_session_list_.end(); begin != end; ++begin) {
             auto &client = *begin;
             if (client) {
-                std::cout << "I am here!" << std::endl;
+                //std::cout << "I am here!" << std::endl;
 //TODO
                 if (DataBuffer_t dataBuffer = client->LoadData(); !dataBuffer.empty()) {
                     m_threadPoolServer_.AddTask([this, data = std::move(dataBuffer), &client] {
@@ -423,119 +423,51 @@ bool Server::EnableKeepAlive(SocketHandle_t socket) {
             }
         }
 
-        std::cout << "after for" << std::endl;
+        //std::cout << "after for" << std::endl;
     if (m_serverStatus_ == SocketStatusInfo::Connected) {
-        std::cout << "m_serverStatus_ == SocketStatusInfo::Connected" << std::endl;
+        //std::cout << "m_serverStatus_ == SocketStatusInfo::Connected" << std::endl;
         m_threadPoolServer_.AddTask([this](){WaitingDataLoop();});
-    }
-}*/
+    }*/
 
-/*void Server::WaitingDataLoop() {
-    std::cout << __FUNCTION__  << std::endl;
-    std::lock_guard lockGuard(m_clientMutex_);
-    for (auto begin = m_session_list_.begin(), end = m_session_list_.end(); begin != end; ++begin) {
-        auto &client = *begin;
-        if (client) {
-            std::cout << "I am here!" << std::endl;
-            std::future<DataBuffer_t> futureData = std::async(std::launch::async, &InterfaceClientSession::LoadData, client.get());
-
-            auto handler = [this, &client, begin, futureData = std::move(futureData)]() mutable {
-
-                futureData.wait();
-
-                DataBuffer_t dataBuffer = futureData.get();
-                if (!dataBuffer.empty()) {
-                    client->m_accessMutex_.lock();
-                    m_handler_(dataBuffer, *client);
-                    client->m_accessMutex_.unlock();
-                } else if (client->m_connectionStatus_ == SocketStatusInfo::Disconnected) {
-                    client->m_accessMutex_.lock();
-                    InterfaceClientSession *pointer = client.release();
-                    client = nullptr;
-                    pointer->m_accessMutex_.unlock();
-                    m_disconnectHandle_(*pointer);
-                    m_session_list_.erase(begin);
-                    delete pointer;
-                }
-            };
-
-            auto handlerPtr = std::make_shared<decltype(handler)>(std::move(handler));
-
-            m_threadPoolServer_.AddTask([handlerPtr]() {
-                (*handlerPtr)();
-            });
-        }
-    }
-
-    std::cout << "after for" << std::endl;
-    if (m_serverStatus_ == SocketStatusInfo::Connected) {
-        std::cout << "m_serverStatus_ == SocketStatusInfo::Connected" << std::endl;
-        m_threadPoolServer_.AddTask([this](){WaitingDataLoop();});
-    }
-}*/
-
-
-/*void Server::WaitingDataLoop() {
-    std::cout << __FUNCTION__  << std::endl;
-    std::lock_guard lockGuard(m_clientMutex_);
-    for (auto begin = m_session_list_.begin(); begin != m_session_list_.end(); ++begin) {
-        auto &client = *begin;
-        if (client) {
-            std::cout << "I am here!" << std::endl;
-            std::thread clientThread([this, &client](){
-                while (client->m_connectionStatus_ == SocketStatusInfo::Connected) {
-                    DataBuffer_t dataBuffer = client->LoadData();
-                    if (!dataBuffer.empty()) {
-                        std::lock_guard lockGuard(client->m_accessMutex_);
-                        m_handler_(dataBuffer, *client);
-                    }
-                }
-            });
-            clientThread.detach();
-        }
-    }
-
-    std::cout << "after for" << std::endl;
-    if (m_serverStatus_ == SocketStatusInfo::Connected) {
-        std::cout << "m_serverStatus_ == SocketStatusInfo::Connected" << std::endl;
-        WaitingDataLoop();
-    }
-}*/
-
-void Server::WaitingDataLoop() {
-    {
+    //std::cout << __FUNCTION__  << std::endl;
+    [this]{
         std::lock_guard lock(m_clientMutex_);
         for(auto it = m_session_list_.begin(), end = m_session_list_.end(); it != end; ++it) {
-            auto& client = *it;
-            if(client){
+
+            do {
+                auto& client = *it;
+
                 if(DataBuffer_t data = client->LoadData(); !data.empty()) {
 
-                    m_threadPoolServer_.AddTask([this, _data = std::move(data), &client]{
-                        client->m_accessMutex_.lock();
-                        m_handler_(std::move(_data), *client);
-                        client->m_accessMutex_.unlock();
+                    m_threadPoolServer_.AddTask([this, _data = std::move(data), &client = *client]{
+                        client.m_accessMutex_.lock();
+                        m_handler_(_data, client);
+                        client.m_accessMutex_.unlock();
                     });
+
                 } else if(client->m_connectionStatus_ == SocketStatusInfo::Disconnected) {
 
-                    m_threadPoolServer_.AddTask([this, &client, it]{
-                        client->m_accessMutex_.lock();
-                        InterfaceClientSession* pointer = client.release();
-                        client = nullptr;
-                        pointer->m_accessMutex_.unlock();
-                        m_disconnectHandle_(*pointer);
-                        m_session_list_.erase(it);
-                        delete pointer;
+                    m_threadPoolServer_.AddTask([this, it = it++]{
+                        m_clientMutex_.lock();
+                        auto client_node = m_session_list_.extract(it);
+                        m_clientMutex_.unlock();
+                        client_node.value()->m_accessMutex_.lock();
+                        m_disconnectHandle_(*client_node.value());
+                        client_node.value()->m_accessMutex_.unlock();
                     });
+
+                    if(it == m_session_list_.cend()) return;
+                    else continue;
                 }
-            }
+
+                break;
+            } while(true);
+
         }
-    }
+    }();
 
-    if(m_serverStatus_ == SocketStatusInfo::Connected)
-        m_threadPoolServer_.AddTask([this](){WaitingDataLoop();});
+    if(m_serverStatus_ == SocketStatusInfo::Connected) m_threadPoolServer_.AddTask([this](){WaitingDataLoop();});
 }
-
-
 
 void Server::printUserInfo(const Server::UserInfo &userInfo) {
     std::cout << "Password: " << userInfo.password_ << std::endl;
@@ -685,6 +617,7 @@ bool Server::InterfaceClientSession::SendData(const void *buffer, const size_t s
     memcpy(reinterpret_cast<char*>(sendBuffer) + sizeof (uint32_t ), buffer, size);
     *reinterpret_cast<uint32_t*>(sendBuffer) = size;
     if(send(m_socketDescriptor_, reinterpret_cast<char*>(sendBuffer), static_cast<int>(size + sizeof(uint32_t)), 0) < 0){
+        free(sendBuffer);
         return false;
     }
     free(sendBuffer);
@@ -702,9 +635,9 @@ DataBuffer_t Server::InterfaceClientSession::LoadData() {
     if (u_long t = true; SOCKET_ERROR == ioctlsocket(m_socketDescriptor_, FIONBIO, &t)) {
         return DataBuffer_t();
     }
-    std::cout << "before recv" << std::endl;
+    //TODO std::cout << "before recv" << std::endl;
     int answer = recv(m_socketDescriptor_, (char *)&size, sizeof(size), 0);
-    std::cout << "after recv" << std::endl;
+    // TODO std::cout << "after recv" << std::endl;
     if (u_long t = false; SOCKET_ERROR == ioctlsocket(m_socketDescriptor_, FIONBIO, &t)){
         return DataBuffer_t();
     }
@@ -723,7 +656,7 @@ DataBuffer_t Server::InterfaceClientSession::LoadData() {
                 }
         )
         NIX (
-                SocketLength_t length = sizeof (error);
+                SocketLength_t length = sizeof(error);
                 getsockopt(m_socketDescriptor_, SOL_SOCKET, SO_ERROR, WIN((char*))&error, &length);
                 if (!error) {
                     error = errno;
@@ -732,8 +665,7 @@ DataBuffer_t Server::InterfaceClientSession::LoadData() {
     }
 
     switch (error) {
-        case 0:
-            break;
+        case 0: return DataBuffer_t();
         case ETIMEDOUT:
         case ECONNRESET:
         case EPIPE:

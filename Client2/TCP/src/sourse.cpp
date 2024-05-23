@@ -278,7 +278,7 @@ DataBuffer_t Client::LoadData() {
 
         switch (error) {
             case 0:
-                break;
+                return DataBuffer_t();
             case ETIMEDOUT:
             case ECONNRESET:
             case EPIPE:
@@ -372,20 +372,22 @@ void Client::JoinHandler() const {
 bool Client::SendData(const void *buffer, const size_t size) const {
     size_t bufferSize = size + sizeof(int);
     std::vector<char> sendBuffer(bufferSize);
+
     *reinterpret_cast<int*>(sendBuffer.data()) = static_cast<int>(size);
     memcpy(sendBuffer.data() + sizeof(int), buffer, size);
 
 #ifdef _WIN32
     int bytesSent = send(m_socketClient_, sendBuffer.data(), static_cast<int>(bufferSize), 0);
-    if (bytesSent == SOCKET_ERROR || static_cast<size_t>(bytesSent) != bufferSize) {
-        return false;
-    }
 #else
     ssize_t bytesSent = send(m_socketClient_, sendBuffer.data(), bufferSize, 0);
-    if (bytesSent == -1 || static_cast<size_t>(bytesSent) != bufferSize) {
+#endif
+
+    if (bytesSent < 0) {
         return false;
     }
-#endif
+    else if (static_cast<size_t>(bytesSent) < bufferSize) {
+        return false;
+    }
 
     return true;
 }

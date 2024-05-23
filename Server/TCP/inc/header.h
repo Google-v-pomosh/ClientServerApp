@@ -24,6 +24,8 @@
 #ifdef _WIN32 // Lib NT
 #include <WinSock2.h>
 #include <mstcpip.h>
+#include <set>
+
 #else // *nix
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -171,7 +173,7 @@ public:
            DataHandleFunctionServer handler             = kDefaultDataHandlerServer,
            ConnectionHandlerFunction connect_handle     = kDefaultConnectionHandlerServer,
            ConnectionHandlerFunction disconnect_handle  = kDefaultConnectionHandlerServer,
-           uint32_t thread_count                        = HARDWARE_CONCURRENCY
+           unsigned int thread_count                    = HARDWARE_CONCURRENCY
     );
 
     ~Server();
@@ -206,7 +208,7 @@ private:
     std::mutex usersMutex;
 
     using ServerSessionIterator = std::list<std::unique_ptr<InterfaceClientSession>>::iterator;
-    std::list<std::unique_ptr<InterfaceClientSession>> m_session_list_;
+    std::set<std::unique_ptr<InterfaceClientSession>> m_session_list_;
 
     DataHandleFunctionServer m_handler_ = kDefaultDataHandlerServer;
     ConnectionHandlerFunction m_connectHandle_ = kDefaultConnectionHandlerServer;
