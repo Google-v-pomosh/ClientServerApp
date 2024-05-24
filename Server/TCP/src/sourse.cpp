@@ -591,7 +591,6 @@ bool Server::InterfaceClientSession::SendData(const void *buffer, const size_t s
 }
 
 DataBuffer_t Server::InterfaceClientSession::LoadData() {
-    std::cout << __FUNCTION__ << std::endl;
     if (m_connectionStatus_ != SocketStatusInfo::Connected) {
         return DataBuffer_t();
     }
@@ -663,6 +662,7 @@ DataBuffer_t Server::InterfaceClientSession::LoadData() {
 
     return dataBuffer;
 }
+
 
 uint32_t Server::InterfaceClientSession::GetHost() const {
     return
