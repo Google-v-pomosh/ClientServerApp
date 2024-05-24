@@ -535,6 +535,7 @@ Server::InterfaceClientSession::InterfaceClientSession(SocketHandle_t socket, So
 
 
 Server::InterfaceClientSession::~InterfaceClientSession(){
+    std::cout << __FUNCTION__ << std::endl;
     InterfaceClientSession::Disconnect();
 #ifdef _WIN32
     if(m_socketDescriptor_ == INVALID_SOCKET) {
@@ -552,6 +553,7 @@ Server::InterfaceClientSession::~InterfaceClientSession(){
 }
 
 TCPInterfaceBase::SockStatusInfo_t Server::InterfaceClientSession::Disconnect() {
+    std::cout << __FUNCTION__ << std::endl;
     SetLastDisconnectionTime();
     m_connectionStatus_ = SockStatusInfo_t::Disconnected;
 #ifdef _WIN32
@@ -589,6 +591,7 @@ bool Server::InterfaceClientSession::SendData(const void *buffer, const size_t s
 }
 
 DataBuffer_t Server::InterfaceClientSession::LoadData() {
+    std::cout << __FUNCTION__ << std::endl;
     if (m_connectionStatus_ != SocketStatusInfo::Connected) {
         return DataBuffer_t();
     }
@@ -628,7 +631,8 @@ DataBuffer_t Server::InterfaceClientSession::LoadData() {
         )
 
         switch (error) {
-            case 0: return DataBuffer_t();
+            case 0:
+                return DataBuffer_t();
             case ETIMEDOUT:
             case ECONNRESET:
             case EPIPE:

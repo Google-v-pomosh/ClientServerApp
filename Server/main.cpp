@@ -57,7 +57,10 @@ int main() {
         if(server.StartServer() == SocketStatusInfo::Connected) {
             std::cout<<"Server listen on port: " << server.GetServerPort() << std::endl
                      <<"Server handling thread pool size: " << server.GetThreadExecutor().GetThreadCount() << std::endl;
+            std::thread serverThread(serverIOThread, std::ref(server));
+
             server.JoinLoop();
+            serverThread.join();
             return EXIT_SUCCESS;
         } else {
             std::cout<<"Server start error! Error code:"<< int(server.GetServerStatus()) <<std::endl;
