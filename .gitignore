@@ -159,3 +159,4 @@
 /cmake-build-debug/
 /Server/example.db-journal
 /.idea/dataSources.xml
+/Server/example.db
