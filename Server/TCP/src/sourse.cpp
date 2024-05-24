@@ -1091,3 +1091,30 @@ Server::UserInfo::UserInfo(std::string username,
           duration_(std::move(duration)),
           timeToday_(std::move(timeToday))
 {}
+
+bool Server::UserList::Comparator::operator()(const Server::UserList &lhs, const Server::UserList &rhs) const {
+    return std::less<std::string>{}(lhs.username_, rhs.username_);
+}
+
+bool Server::UserList::Comparator::operator()(const Server::UserList &lhs, const std::string &rhs) const {
+    return std::less<std::string>{}(lhs.username_, rhs);
+}
+
+bool Server::UserList::Comparator::operator()(const std::string &lhs, const Server::UserList &rhs) const {
+    return std::less<std::string>{}(lhs, rhs.username_);
+}
+
+bool Server::ClientSessionComparator::operator()(const std::unique_ptr<InterfaceClientSession> &lhs,
+                                                 const std::unique_ptr<InterfaceClientSession> &rhs) const {
+    return (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) < (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
+}
+
+bool Server::ClientSessionComparator::operator()(const std::unique_ptr<InterfaceClientSession> &lhs,
+                                                 const Server::ClientKey &rhs) const {
+    return (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) < (uint64_t(rhs.host) | uint64_t(rhs.port) << 32);
+}
+
+bool Server::ClientSessionComparator::operator()(const Server::ClientKey &lhs,
+                                                 const std::unique_ptr<InterfaceClientSession> &rhs) const {
+    return (uint64_t(lhs.host) | uint64_t(lhs.port) << 32) < (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
+}
