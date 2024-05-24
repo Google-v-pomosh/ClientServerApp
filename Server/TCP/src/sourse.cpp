@@ -154,6 +154,7 @@ uint16_t Server::SetServerPort(const uint16_t port) {
 }
 
 SocketStatusInfo Server::StartServer() {
+    std::cout << __FUNCTION__ << std::endl;
     int flag;
     if(m_serverStatus_ == SocketStatusInfo::Connected) {
         StopServer();
@@ -197,6 +198,7 @@ SocketStatusInfo Server::StartServer() {
 
     m_serverStatus_ = SocketStatusInfo::Connected;
     m_threadPoolServer_.AddTask([this]{HandlingAcceptLoop();});
+
     m_threadPoolServer_.AddTask([this]{WaitingDataLoop();});
 
     return m_serverStatus_;
@@ -294,14 +296,12 @@ void Server::ServerDisconnectAll() {
 }
 
 void Server::HandlingAcceptLoop() {
-    //TODO
-    std::cout << __FUNCTION__  << std::endl;
     SocketLength_t addrLen = sizeof(SocketAddressIn_t);
     SocketAddressIn_t clientAddr;
 #ifdef _WIN32
-    if(SocketHandle_t clientSocket = accept(m_socketServer_, (struct sockaddr*)&clientAddr, &addrLen);
-              clientSocket != 0 && m_serverStatus_ == SocketStatusInfo::Connected)
-    {
+    if(SocketHandle_t clientSocket =
+            accept(m_socketServer_, (struct sockaddr*)&clientAddr, &addrLen);
+            clientSocket != 0 && m_serverStatus_ == SocketStatusInfo::Connected) {
         if (EnableKeepAlive(clientSocket))
         {
             std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, clientAddr));
@@ -662,22 +662,22 @@ DataBuffer_t Server::InterfaceClientSession::LoadData() {
                     error = errno;
                 }
         )
-    }
 
-    switch (error) {
-        case 0: return DataBuffer_t();
-        case ETIMEDOUT:
-        case ECONNRESET:
-        case EPIPE:
-            Disconnect();
-            [[fallthrough]];
-        case EAGAIN:
-            return DataBuffer_t();
-        default:
-            Disconnect();
-            std::cerr << "Unhandled error!\n"
-                      << "Code: " << error << " Error: " << std::strerror(error) << '\n';
-            return DataBuffer_t();
+        switch (error) {
+            case 0: return DataBuffer_t();
+            case ETIMEDOUT:
+            case ECONNRESET:
+            case EPIPE:
+                Disconnect();
+                [[fallthrough]];
+            case EAGAIN:
+                return DataBuffer_t();
+            default:
+                Disconnect();
+                std::cerr << "Unhandled error!\n"
+                          << "Code: " << error << " Error: " << std::strerror(error) << '\n';
+                return DataBuffer_t();
+        }
     }
 
     if (!size) {
@@ -730,283 +730,6 @@ std::string Server::InterfaceClientSession::ConnectionTimes(const InterfaceClien
     return oss.str();
 }
 
-
-
-/*bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& data,Server::InterfaceClientSession& client, Server& server) {
-    std::string timeStr = client.GetDayNow();
-    uint16_t port = client.GetPort();
-    std::string connectionTime = client.GetConnectionTime();
-
-    std::string receivedMessageAll(data.begin(), data.end());
-    receivedMessageAll.erase(std::remove(receivedMessageAll.begin(), receivedMessageAll.end(), '\0'), receivedMessageAll.end());
-
-    std::string receivedMessage = receivedMessageAll.substr(0);
-
-    size_t colonPos = receivedMessage.find(':');
-    if (colonPos == std::string::npos){
-        std::cerr << "User don`t detected" << std::endl;
-        return false;
-    }
-    std::string username = receivedMessage.substr(0, colonPos);
-    client.username_ = username;
-    std::string password = receivedMessage.substr(colonPos + 1);
-
-    std::lock_guard<std::mutex> lock(server.usersMutex);
-
-    auto it = server.users.find(username);
-    if(it == server.users.end()){
-        server.users.emplace(username, std::vector<UserInfo>{UserInfo(username,password,port,connectionTime,"", "", timeStr)});
-        std::cout << "User '" << username << "' has been assigned port: " << client.GetPort() << std::endl;
-    }
-    else {
-        it->second.emplace_back(username,password,port,connectionTime,"", "", timeStr);
-        std::cout << "User '" << username << "' authenticated successfully" << std::endl;
-    }
-    return true;
-}*/
-
-/*bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& data,
-                                                          Server::InterfaceClientSession& client,
-                                                          Server& server) {
-    std::string receivedMessageAll(data.begin(), data.end());
-    receivedMessageAll.erase(std::remove(receivedMessageAll.begin(), receivedMessageAll.end(), '\0'),
-                             receivedMessageAll.end());
-
-    std::string startPoint;
-    startPoint +='\x3C';
-    startPoint +='\x2F';
-
-    std::string::size_type start = receivedMessageAll.find(startPoint);
-
-    std::string stopPoint;
-    stopPoint +=('\x7C');
-    stopPoint +='\x3E';
-
-    std::string::size_type end = receivedMessageAll.rfind(stopPoint);
-
-    if(start == std::string::npos || end == std::string::npos || start >= end){
-#ifdef DEBUGLOG
-        std::cerr << "Message format error\n";
-#endif
-        return false;
-    }
-
-    std::string content = receivedMessageAll.substr(start + 2, end - (start + 2));
-    end += 2;
-
-    std::string::size_type colon = receivedMessageAll.find(':', end);
-    if(colon == std::string::npos) {
-        std::cerr << "User don`t detected\n";
-        return false;
-    }
-
-    std::string hash = receivedMessageAll.substr(colon + 1);
-
-    if (!checkHash(content, hash)) {
-        std::cerr << "Hash mismatch\n";
-        return false;
-    }
-
-    std::string username = content.substr(0, content.find(':'));
-    client.username_ = username;
-    std::string password = content.substr(content.find(':') + 1);
-
-    std::lock_guard<std::mutex> lock(server.usersMutex);
-
-    auto it = server.users.find(username);
-    if (it == server.users.end()) {
-        server.users.emplace(username, std::vector<UserInfo>{UserInfo{username,
-                                                                      password,
-                                                                      client.GetPort(),
-                                                                      client.GetConnectionTime(),
-                                                                      "",
-                                                                      "",
-                                                                      client.GetDayNow()}});
-#ifdef DEBUGLOG
-        std::cout << "User '" << username << "' has been assigned port: " << client.GetPort() << std::endl;
-#endif
-    } else {
-        it->second.emplace_back(username,
-                                password,
-                                client.GetPort(),
-                                client.GetConnectionTime(),
-                                "",
-                                "",
-                                client.GetDayNow());
-#ifdef DEBUGLOG
-        std::cout << "User '" << username << "' authenticated successfully\n";
-#endif
-    }
-    return true;
-
-}*/
-
-/*bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& data,
-                                                          Server::InterfaceClientSession& client,
-                                                          Server& server) {
-    std::string receivedMessageAll(data.begin(), data.end());
-    receivedMessageAll.erase(std::remove(receivedMessageAll.begin(), receivedMessageAll.end(), '\0'),
-                             receivedMessageAll.end());
-
-    std::string startPoint;
-    startPoint +='\x3C';
-    startPoint +='\x2F';
-
-    std::string::size_type start = receivedMessageAll.find(startPoint);
-
-    std::string stopPoint;
-    stopPoint +=('\x7C');
-    stopPoint +='\x3E';
-
-    std::string::size_type end = receivedMessageAll.rfind(stopPoint);
-
-    if(start == std::string::npos || end == std::string::npos || start >= end){
-#ifdef DEBUGLOG
-        std::cerr << "Message format error\n";
-#endif
-        return false;
-    }
-
-    std::string content = receivedMessageAll.substr(start + 2, end - (start + 2));
-    end += 2;
-
-    std::string startDataContent;
-    startDataContent += '\x7B';
-    std::string::size_type startData = content.find(startDataContent);
-
-    std::string stopDataContent;
-    stopDataContent += '\x7D';
-    std::string::size_type endData = content.rfind(stopDataContent);
-
-    if(startData == std::string::npos || endData == std::string::npos || startData >= endData){
-#ifdef DEBUGLOG
-        std::cerr << "Data format error\n";
-#endif
-        return false;
-    }
-
-    std::string dataContent = content.substr(startData + 1, endData - (startData + 1));
-
-    int messageType = std::stoi(content.substr(0, 1)); // Extract message type
-
-    if (messageType == MessageTypes::SendAuthenticationUser) {
-        // Handle authentication message
-        std::string userData = dataContent.substr(0); // Skip message type and '{'
-        size_t colonPos = userData.find(':');
-        if (colonPos == std::string::npos) {
-#ifdef DEBUGLOG
-            std::cerr << "User data format error\n";
-#endif
-            return false;
-        }
-
-        std::string hash = receivedMessageAll.substr(end + 1); // Extract hash
-        if (!checkHash(userData, hash)) {
-#ifdef DEBUGLOG
-            std::cerr << "Hash mismatch\n";
-#endif
-            return false;
-        }
-
-        std::string username = userData.substr(0, colonPos);
-        client.username_ = username;
-        std::string password = userData.substr(colonPos + 1);
-
-        std::lock_guard<std::mutex> lock(server.usersMutex);
-
-        auto it = server.users.find(username);
-        if (it == server.users.end()) {
-            server.users.emplace(username, std::vector<UserInfo>{UserInfo{username,
-                                                                          password,
-                                                                          client.GetPort(),
-                                                                          client.GetConnectionTime(),
-                                                                          "",
-                                                                          "",
-                                                                          client.GetDayNow()}});
-#ifdef DEBUGLOG
-            std::cout << "User '" << username << "' has been assigned port: " << client.GetPort() << std::endl;
-#endif
-        } else {
-            it->second.emplace_back(username,
-                                    password,
-                                    client.GetPort(),
-                                    client.GetConnectionTime(),
-                                    "",
-                                    "",
-                                    client.GetDayNow());
-#ifdef DEBUGLOG
-            std::cout << "User '" << username << "' authenticated successfully\n";
-#endif
-        }
-    } else if (messageType == MessageTypes::SendMessageTo) {
-        std::string sender;
-        std::string recipientName;
-        std::string message;
-
-        size_t arrowPos = dataContent.find("->");
-        if (arrowPos == std::string::npos) {
-#ifdef DEBUGLOG
-            std::cerr << "Invalid message format: no arrow found\n";
-#endif
-            return false;
-        }
-
-        std::string hash = receivedMessageAll.substr(end + 1);
-        if (!checkHash(dataContent, hash)) {
-#ifdef DEBUGLOG
-            std::cerr << "Hash mismatch\n";
-#endif
-            return false;
-        }
-
-        sender = dataContent.substr(0, arrowPos);
-
-        size_t equalPos = dataContent.find("=");
-        if (equalPos == std::string::npos) {
-#ifdef DEBUGLOG
-            std::cerr << "Invalid message format: no equal sign found\n";
-#endif
-            return false;
-        }
-        recipientName = dataContent.substr(arrowPos + 2, equalPos - (arrowPos + 2));
-        message = dataContent.substr(equalPos + 1);
-
-        std::lock_guard<std::mutex> lock(server.m_clientMutex_);
-
-        auto senderSession = std::find_if(server.m_session_list_.begin(), server.m_session_list_.end(),
-                                          [&](const auto& session) { return session->GetUserNameIn() == sender; });
-        if (senderSession == server.m_session_list_.end()) {
-#ifdef DEBUGLOG
-            std::cerr << "Sender session not found\n";
-#endif
-            return false;
-        }
-
-        auto recipientSession = std::find_if(server.m_session_list_.begin(), server.m_session_list_.end(),
-                                             [&](const auto& session) { return session->GetUserNameIn() == recipientName; });
-        if (recipientSession == server.m_session_list_.end()) {
-#ifdef DEBUGLOG
-            std::cerr << "Recipient session not found\n";
-#endif
-            return false;
-        }
-
-        // Отправка сообщения от отправителя получателю
-        std::string fullMessage = sender + "->" + recipientName + "=" + message;
-        bool sendSuccess = (*recipientSession)->SendData(fullMessage.c_str(), fullMessage.size());
-
-        // Возвращаем результат отправки
-        return sendSuccess;
-
-    } else {
-#ifdef DEBUGLOG
-        std::cerr << "Unsupported message type\n";
-#endif
-        return false;
-    }
-
-    return true;
-}*/
 
 bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& data,
                                                           Server::InterfaceClientSession& client,
@@ -1080,7 +803,7 @@ bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& da
             client.username_ = username;
             std::string password = userData.substr(colonPos + 1);
 
-            //std::lock_guard<std::mutex> lock(server.usersMutex);
+            std::lock_guard<std::mutex> lock(server.usersMutex);
             try {
                 auto it = server.users.find(username);
                 if (it == server.users.end()) {
@@ -1145,7 +868,7 @@ bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& da
             recipientName = dataContent.substr(arrowPos + 2, equalPos - (arrowPos + 2));
             message = dataContent.substr(equalPos + 1);
 
-            //std::lock_guard<std::mutex> lock(server.usersMutex);
+            std::lock_guard<std::mutex> lock(server.usersMutex);
 
             auto senderSession = std::find_if(server.m_session_list_.begin(), server.m_session_list_.end(),
                                               [&](const auto& session) { return session->GetUserNameIn() == sender; });

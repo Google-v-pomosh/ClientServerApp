@@ -154,6 +154,24 @@ public:
                           std::string timeToday);
     };
 
+    struct ClientKey{ uint32_t host; uint16_t port; };
+
+    struct ClientComparator {
+        using is_transparent = std::true_type;
+
+        bool operator()(const std::unique_ptr<InterfaceClientSession>& lhs, const std::unique_ptr<InterfaceClientSession>& rhs) const {
+            return (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) < (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
+        }
+
+        bool operator()(const std::unique_ptr<InterfaceClientSession>& lhs, const ClientKey& rhs) const {
+            return (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) < (uint64_t(rhs.host) | uint64_t(rhs.port) << 32);
+        }
+
+        bool operator()(const ClientKey& lhs, const std::unique_ptr<InterfaceClientSession>& rhs) const {
+            return (uint64_t(lhs.host) | uint64_t(lhs.port) << 32) < (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
+        }
+    };
+
     void printUserInfo(const UserInfo& userInfo);
     void printAllUsersInfo();
     void initializeDatabase();
@@ -208,7 +226,7 @@ private:
     std::mutex usersMutex;
 
     using ServerSessionIterator = std::list<std::unique_ptr<InterfaceClientSession>>::iterator;
-    std::set<std::unique_ptr<InterfaceClientSession>> m_session_list_;
+    std::set<std::unique_ptr<InterfaceClientSession>, ClientComparator> m_session_list_;
 
     DataHandleFunctionServer m_handler_ = kDefaultDataHandlerServer;
     ConnectionHandlerFunction m_connectHandle_ = kDefaultConnectionHandlerServer;
