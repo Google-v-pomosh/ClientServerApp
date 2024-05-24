@@ -1,35 +1,11 @@
 #include <iostream>
+#include <utility>
 #include "../Client/TCP/inc/header.h"
 
 
 #define DEBUGLOG
 
 std::atomic<bool> exitRequested(false);
-
-void runClient(Client& client) {
-    if (!client.SetDataPc()) {
-        std::cerr << "Failed to set PC data\n";
-        return;
-    }
-    if (client.ConnectTo(kLocalhostIP, 8081) == SocketStatusInfo::Connected) {
-        std::cout << "Client Connected\n";
-        if (!client.SendAuthData()) {
-            std::cerr << "Failed to send auth data\n";
-            return;
-        }
-        //client.GetDataPC();
-        client.SetHandler([&client](DataBuffer_t dataBuffer){
-#ifdef DEBUGLOG
-            std::clog << "Recived " << dataBuffer.size() << " bytes: " << (char *)dataBuffer.data() << '\n';
-#endif
-            //client.SendData("Hello, server\0", sizeof("Hello, server\0"));
-        });
-        client.SendData("Hello, server\0", sizeof("Hello, server\0"));
-    } else {
-        std::cerr << "Client is not Connected\n";
-        std::exit(EXIT_FAILURE);
-    }
-}
 
 void clientIOThread(Client& client) {
     std::string input;
@@ -71,25 +47,27 @@ void clientIOThread(Client& client) {
 }
 
 int main() {
-    /*NetworkThreadPool m_thread_pool;
+    std::cout << "Hello, World!Iam Client" << std::endl;
+
+    NetworkThreadPool m_thread_pool;
     Client client(&m_thread_pool, "Anton");
-
-    if(client.ConnectTo(kLocalhostIP, 8021) == SocketStatusInfo::Connected) {
+    if(client.ConnectTo(kLocalhostIP, 8081) == SocketStatusInfo::Connected) {
+        if (!client.SetDataPc()) {
+            std::cerr << "Failed to set PC data\n";
+            return EXIT_FAILURE;
+        }
         std::cout << "Client connected\n";
-        m_thread_pool.AddTask(client.SendAuthData());
-    }*/
+        m_thread_pool.AddTask([&client]{client.SendAuthData();});
+        client.SetHandler([&client](DataBuffer_t dataBuffer) {return client.ReciveHandler(std::move(dataBuffer)); });
 
-    std::cout << "Hello, World! Client" << std::endl;
+        std::thread clientIOThreadVar(clientIOThread, std::ref(client));
 
-    NetworkThreadPool m_clientThreadPool;
+        clientIOThreadVar.detach();
 
-    Client firstClient(&m_clientThreadPool, "Anton");
-
-    std::thread clientInputThread(clientIOThread, std::ref(firstClient));
-    std::thread runThread1(runClient, std::ref(firstClient));
-
-    runThread1.join();
-    clientInputThread.join();
-
-    return EXIT_SUCCESS;
+        m_thread_pool.JoinThreads();
+    } else {
+        std::cerr << "Client isn`t connected\n";
+        return EXIT_FAILURE;
+    }
+    return EXIT_FAILURE;
 }

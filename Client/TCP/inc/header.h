@@ -25,6 +25,7 @@
 #include "../../../TCP/inc/header.h"
 /*#include "../../../Lib/sha256/inc/sha256.h"*/
 #include <memory.h>
+#include <list>
 
 #pragma comment(lib, "IPHLPAPI.lib")
 #define SHA256_DIGEST_SIZE 32
@@ -78,8 +79,18 @@ private:
     SocketHandle_t m_socketClient_;
 
     std::mutex m_handleMutex_;
+    std::mutex m_authenticationMutex_;
+
+    uint16_t authenticationActExtracted_;
+
     std::function<void(DataBuffer_t)> m_dataHandlerFunction = [](const DataBuffer_t&){};
+    std::condition_variable m_authenticationIO;
+
+    std::list<std::string> m_messageList_;
+
     ThreadManagementType m_threadManagmentType_;
+    ResponseCode m_authenticationResponse;
+
     ClientThread m_threadClient;
     SockStatusInfo_t m_statusClient_ = SockStatusInfo_t::Disconnected;
 
@@ -89,8 +100,18 @@ private:
 
 
     std::string username_;
+    std::string recivername_;
 
 public:
+    template<typename T>
+    T extract(DataBuffer_t::iterator& it) {
+        T result = *reinterpret_cast<T*>(&*it);
+        it += sizeof(T);
+        return result;
+    }
+
+    std::string ExtractString(DataBuffer_t::iterator& it);
+
     void sha256_transform(SHA256_CTX *ctx, const BYTE data[]);
     void sha256_init(SHA256_CTX *ctx);
     void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
@@ -113,6 +134,10 @@ public:
     [[nodiscard]] DataBuffer_t LoadDataSync() const;
     void SetHandler(DataHandleFunctionClient handler);
     void JoinHandler() const;
+    void ReciveHandler(DataBuffer_t dataBuffer);
+
+    void UpdateSpace();
+    void clearConsole();
 
     bool SendData(const void* buffer, size_t size) const override;
     bool SendMessageTo(const std::string& recipientId, const std::string& message);

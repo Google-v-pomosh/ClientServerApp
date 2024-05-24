@@ -43,6 +43,15 @@ typedef int KeepAliveProperty_t;
 
 constexpr uint32_t kLocalhostIP = 0x0100007f;
 
+enum class ResponseCode : unsigned char {
+    AuthenticationOk = 0x00,
+    AuthenticationFail = 0x01,
+    IncomingMessage = 0x02,
+    SendingOk = 0x03,
+    SendingFail = 0x04,
+    AccessDenied = 0xFF
+};
+
 enum class SocketStatusInfo : uint8_t {
     Connected       = 0,
     InitError       = 1,

@@ -344,10 +344,10 @@ void Client::SetHandler(Client::DataHandleFunctionClient handler) {
                 return;
             }
             m_threadClient.m_threadClient_ = new std::thread(&Client::HandleSingleThread, this);
-        break;
+            break;
         case Client::ThreadManagementType::ThreadPool:
             m_threadClient.m_threadPoolClient_->AddTask([this]{HandleThreadPool();});
-        break;
+            break;
     }
 }
 
@@ -778,6 +778,82 @@ std::string Client::calculateHash(const std::string &data) {
         result += hash[i];
     }
     return result;
+}
+
+void Client::ReciveHandler(DataBuffer_t dataBuffer) {
+    auto dataIterator = dataBuffer.begin();
+    uint16_t extractedValue = extract<uint16_t>(dataIterator);
+    ResponseCode responseCode = extract<ResponseCode>(dataIterator);
+    switch (responseCode) {
+        case ResponseCode::AuthenticationOk:
+        case ResponseCode::AuthenticationFail:
+        {
+            std::unique_lock uniqueLock(m_authenticationMutex_);
+            authenticationActExtracted_ = extractedValue;
+            m_authenticationResponse = responseCode;
+        }
+            m_authenticationIO.notify_one();
+            return;
+        case ResponseCode::IncomingMessage: {
+            std::string sendler = ExtractString(dataIterator);
+            std::string message = ExtractString(dataIterator);
+
+            m_messageList_.push_back(sendler + ":" + message);
+            UpdateSpace();
+            return;
+        }
+        case ResponseCode::SendingOk: {
+            return;
+        }
+        case ResponseCode::SendingFail: {
+            m_messageList_.push_back("Send message faild");
+            UpdateSpace();
+            return;
+        }
+        case ResponseCode::AccessDenied: {
+            return;
+        }
+    }
+}
+
+std::string Client::ExtractString(std::vector<uint8_t>::iterator &it) {
+    uint64_t string_size = extract<uint64_t>(it);
+    std::string string(reinterpret_cast<std::string::value_type*>(&*it), string_size);
+    it += string_size;
+    return string;
+}
+
+void Client::UpdateSpace() {
+    clearConsole();
+    for(const auto &message: m_messageList_) {
+        std::cout << message << std::endl;
+    }
+    std::cout << "Resiver" << std::endl;
+    if(!recivername_.empty()){
+        std::cout << "To whom: " << recivername_ << std::endl;
+        std::cout << "Message: " << std::endl;
+    }
+}
+
+void Client::clearConsole() {
+#ifdef _WIN32
+    COORD topLeft  = { 0, 0 };
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO screen;
+    DWORD written;
+
+    GetConsoleScreenBufferInfo(console, &screen);
+    FillConsoleOutputCharacterA(
+            console, ' ', screen.dwSize.X * screen.dwSize.Y, topLeft, &written
+    );
+    FillConsoleOutputAttribute(
+            console, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE,
+            screen.dwSize.X * screen.dwSize.Y, topLeft, &written
+    );
+    SetConsoleCursorPosition(console, topLeft);
+#else
+    std::cout << "\x1B[2J\x1B[H";
+#endif
 }
 
 
