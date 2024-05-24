@@ -394,42 +394,6 @@ bool Server::EnableKeepAlive(SocketHandle_t socket) {
 }
 
 void Server::WaitingDataLoop() {
-/*        std::cout << __FUNCTION__  << std::endl;
-        std::lock_guard lockGuard(m_clientMutex_);
-        for (auto begin = m_session_list_.begin(), end = m_session_list_.end(); begin != end; ++begin) {
-            auto &client = *begin;
-            if (client) {
-                //std::cout << "I am here!" << std::endl;
-//TODO
-                if (DataBuffer_t dataBuffer = client->LoadData(); !dataBuffer.empty()) {
-                    m_threadPoolServer_.AddTask([this, data = std::move(dataBuffer), &client] {
-                        client->m_accessMutex_.lock();
-                        m_handler_(data, *client);
-                        client->m_accessMutex_.unlock();
-                    });
-                } else if (client->m_connectionStatus_ == SocketStatusInfo::Disconnected) {
-                    m_threadPoolServer_.AddTask([this, &client, begin] {
-                        client->m_accessMutex_.lock();
-                        InterfaceClientSession *pointer = client.release();
-                        client = nullptr;
-                        pointer->m_accessMutex_.unlock();
-                        m_disconnectHandle_(*pointer);
-                        m_session_list_.erase(begin);
-                        delete pointer;
-
-                    });
-                }
-//TODO
-            }
-        }
-
-        //std::cout << "after for" << std::endl;
-    if (m_serverStatus_ == SocketStatusInfo::Connected) {
-        //std::cout << "m_serverStatus_ == SocketStatusInfo::Connected" << std::endl;
-        m_threadPoolServer_.AddTask([this](){WaitingDataLoop();});
-    }*/
-
-    //std::cout << __FUNCTION__  << std::endl;
     [this]{
         std::lock_guard lock(m_clientMutex_);
         for(auto it = m_session_list_.begin(), end = m_session_list_.end(); it != end; ++it) {
