@@ -159,7 +159,7 @@ public:
         std::string password_;
 
         struct Comparator {
-            using is_transparent = std::true_type;
+            using isTransp = std::true_type;
 
             bool operator()(const UserList& lhs, const UserList& rhs) const;
             bool operator()(const UserList& lhs, const std::string& rhs) const;
@@ -187,7 +187,36 @@ public:
         UserList* userList = nullptr;
     };
 
+    class UserInfoTable {
+        std::shared_mutex mutexTable;
+        std::set<UserList, UserList::Comparator> userTable_;
+    public:
+        UserInfoTable() = default;
+
+        UserList* registredUser(std::string name, std::string pass);
+        UserList* authorizeUser(UserList name, std::string pass);
+        UserList* findUser(UserList name);
+    }userInfoTable;
+
     struct ClientKey{ uint32_t host; uint16_t port; };
+
+    class SessionConnectionTable {
+        struct SessionComparator {
+            using isTransp = std::true_type;
+
+            bool operator ()(const SessionList& lhs, const SessionList& rhs) const;
+
+            bool operator ()(const SessionList& lhs, const ClientKey& rhs) const {
+                return (uint64_t(lhs.socket->GetHost()) | uint64_t(lhs.socket->GetPort()) << 32) < (uint64_t(rhs.host) | uint64_t(rhs.port) << 32);
+            }
+
+            bool operator ()(const ClientKey& lhs, const SessionList& rhs) const {
+                return (uint64_t(lhs.host) | uint64_t(lhs.port) << 32) < (uint64_t(rhs.socket->GetHost()) | uint64_t(rhs.socket->GetPort()) << 32);
+            }
+        };
+    };
+
+
 
     struct ClientSessionComparator {
         using is_transparent = std::true_type;

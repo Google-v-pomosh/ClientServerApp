@@ -1106,15 +1106,57 @@ bool Server::UserList::Comparator::operator()(const std::string &lhs, const Serv
 
 bool Server::ClientSessionComparator::operator()(const std::unique_ptr<InterfaceClientSession> &lhs,
                                                  const std::unique_ptr<InterfaceClientSession> &rhs) const {
-    return (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) < (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
+    return  (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) <
+            (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
 }
 
 bool Server::ClientSessionComparator::operator()(const std::unique_ptr<InterfaceClientSession> &lhs,
                                                  const Server::ClientKey &rhs) const {
-    return (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) < (uint64_t(rhs.host) | uint64_t(rhs.port) << 32);
+    return  (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) <
+            (uint64_t(rhs.host) | uint64_t(rhs.port) << 32);
 }
 
 bool Server::ClientSessionComparator::operator()(const Server::ClientKey &lhs,
                                                  const std::unique_ptr<InterfaceClientSession> &rhs) const {
-    return (uint64_t(lhs.host) | uint64_t(lhs.port) << 32) < (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
+    return  (uint64_t(lhs.host) | uint64_t(lhs.port) << 32) <
+            (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
+}
+
+Server::UserList* Server::UserInfoTable::registredUser(std::string name, std::string pass) {
+    std::lock_guard lockGuard(mutexTable);
+    auto info = userTable_.emplace(UserList{std::move(name), std::move(pass)});
+    if(info.second) {
+        return const_cast<UserList*>(&*info.first);
+    } else {
+        return nullptr;
+    }
+}
+
+Server::UserList* Server::UserInfoTable::authorizeUser(UserList name, std::string pass) {
+    std::lock_guard lockGuard(mutexTable);
+    auto iterator = userTable_.find(name);
+    if(iterator != userTable_.cend()){
+        if(iterator -> password_ == pass) {
+            return const_cast<UserList*>(&*iterator);
+        } else {
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
+
+Server::UserList *Server::UserInfoTable::findUser(UserList name) {
+    std::lock_guard lockGuard(mutexTable);
+    auto iterator = userTable_.find(name);
+    if (iterator != userTable_.cend()) {
+        return const_cast<UserList *>(&*iterator);
+    } else {
+        return nullptr;
+    }
+}
+
+bool Server::SessionConnectionTable::SessionComparator::operator()(const Server::SessionList &lhs,
+                                                                   const Server::SessionList &rhs) const {
+    return (uint64_t(lhs.socket->GetHost()) | uint64_t(lhs.socket->GetPort()) << 32) <
+           (uint64_t(rhs.socket->GetHost()) | uint64_t(rhs.socket->GetPort()) << 32);
 }
