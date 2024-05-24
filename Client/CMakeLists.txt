@@ -17,6 +17,6 @@ endif()
 
 target_include_directories(Client PRIVATE ../TCP/inc)
 target_include_directories(Client PRIVATE ../Client/TCP/inc)
-target_include_directories(Client PRIVATE ../Lib/sha256/inc)
+
 
 target_compile_definitions(Client PRIVATE DEBUG)

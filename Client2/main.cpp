@@ -71,6 +71,14 @@ void clientIOThread(Client& client) {
 }
 
 int main() {
+    /*NetworkThreadPool m_thread_pool;
+    Client client(&m_thread_pool, "Anton");
+
+    if(client.ConnectTo(kLocalhostIP, 8021) == SocketStatusInfo::Connected) {
+        std::cout << "Client connected\n";
+        m_thread_pool.AddTask(client.SendAuthData());
+    }*/
+
     std::cout << "Hello, World! Client" << std::endl;
 
     NetworkThreadPool m_clientThreadPool;

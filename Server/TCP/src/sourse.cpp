@@ -698,7 +698,6 @@ std::string Server::InterfaceClientSession::ConnectionTimes(const InterfaceClien
     return oss.str();
 }
 
-
 bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& data,
                                                           Server::InterfaceClientSession& client,
                                                           Server& server) {
@@ -745,12 +744,11 @@ bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& da
 
     std::string dataContent = content.substr(startData + 1, endData - (startData + 1));
 
-    int messageType = std::stoi(content.substr(0, 1)); // Extract message type
+    int messageType = std::stoi(content.substr(0, 1));
 
     switch (messageType) {
         case MessageTypes::SendAuthenticationUser: {
-            // Handle authentication message
-            std::string userData = dataContent.substr(0); // Skip message type and '{'
+            std::string userData = dataContent.substr(0);
             size_t colonPos = userData.find(':');
             if (colonPos == std::string::npos) {
 #ifdef DEBUGLOG

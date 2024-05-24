@@ -70,23 +70,4 @@ int main() {
         std::cerr << except.what();
         return EXIT_FAILURE;
     }
-    /*if (server.StartServer() == SocketStatusInfo::Connected) {
-        std::cout << "Server listening on port: " << server.GetServerPort() << '\n'
-                  << "Server handling thread pool size: " << server.GetThreadExecutor().GetThreadCount() << std::endl;
-
-        //std::thread serverThread(serverIOThread, std::ref(server));
-
-        try {
-            server.JoinLoop();
-        } catch (const std::exception& e) {
-            std::cerr << "Exception: " << e.what() << std::endl;
-            server.StopServer();
-        }
-
-        //serverThread.join();
-        return EXIT_SUCCESS;
-    } else {
-        std::cerr << "Failed to start server! Error code: " << static_cast<int>(server.GetServerStatus()) << std::endl;
-        return EXIT_FAILURE;
-    }*/
 }
