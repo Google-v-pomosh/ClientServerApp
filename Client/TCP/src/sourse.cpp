@@ -781,9 +781,9 @@ std::string Client::calculateHash(const std::string &data) {
 }
 
 void Client::ReciveHandler(DataBuffer_t dataBuffer) {
-    auto dataIterator = dataBuffer.begin();
-    uint16_t extractedValue = extract<uint16_t>(dataIterator);
-    ResponseCode responseCode = extract<ResponseCode>(dataIterator);
+    auto dataIterator = dataBuffer.cbegin();
+    uint16_t extractedValue = NetworkThreadPool::Extract<uint16_t>(dataIterator);
+    ResponseCode responseCode = NetworkThreadPool::Extract<ResponseCode>(dataIterator);
     switch (responseCode) {
         case ResponseCode::AuthenticationOk:
         case ResponseCode::AuthenticationFail:
@@ -795,8 +795,8 @@ void Client::ReciveHandler(DataBuffer_t dataBuffer) {
             m_authenticationIO.notify_one();
             return;
         case ResponseCode::IncomingMessage: {
-            std::string sendler = ExtractString(dataIterator);
-            std::string message = ExtractString(dataIterator);
+            std::string sendler = NetworkThreadPool::ExtractString(dataIterator);
+            std::string message = NetworkThreadPool::ExtractString(dataIterator);
 
             m_messageList_.push_back(sendler + ":" + message);
             UpdateSpace();
@@ -816,12 +816,13 @@ void Client::ReciveHandler(DataBuffer_t dataBuffer) {
     }
 }
 
-std::string Client::ExtractString(std::vector<uint8_t>::iterator &it) {
-    uint64_t string_size = extract<uint64_t>(it);
+//TODO
+/*std::string Client::ExtractString(std::vector<uint8_t>::iterator &it) {
+    uint64_t string_size = Extract<uint64_t>(it);
     std::string string(reinterpret_cast<std::string::value_type*>(&*it), string_size);
     it += string_size;
     return string;
-}
+}*/
 
 void Client::UpdateSpace() {
     clearConsole();
@@ -831,7 +832,7 @@ void Client::UpdateSpace() {
     std::cout << "Resiver" << std::endl;
     if(!recivername_.empty()){
         std::cout << "To whom: " << recivername_ << std::endl;
-        std::cout << "Message: " << std::endl;
+        std::cout << "Notification: " << std::endl;
     }
 }
 

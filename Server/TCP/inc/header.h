@@ -6,6 +6,7 @@
 
 #include <list>
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -113,7 +114,10 @@ public:
 
         DataBuffer_t LoadData() override;
         bool SendData(const void* buffer, size_t size) const override;
+
         bool AutentficateUserInfo(const DataBuffer_t& data,Server::InterfaceClientSession& client, Server& server);
+        void HandleData(const DataBuffer_t& data, Server& server);
+
         [[nodiscard]] ConnectionType GetType() const override {return ConnectionType::Server;}
 
         [[nodiscard]] std::chrono::system_clock::time_point GetFirstConnectionTime() const { return m_firstConnectionTime_; }
@@ -154,76 +158,98 @@ public:
                           std::string timeToday);
     };
 
-    struct UserList {
-        std::string username_;
-        std::string password_;
+    struct UserLoginInfo {
+        std::string username_{};
+        std::string password_{};
 
         struct Comparator {
-            using isTransp = std::true_type;
+            using InfoComparator = std::true_type;
 
-            bool operator()(const UserList& lhs, const UserList& rhs) const;
-            bool operator()(const UserList& lhs, const std::string& rhs) const;
-            bool operator()(const std::string& lhs, const UserList& rhs) const;
+            bool operator()(const UserLoginInfo& lhs, const UserLoginInfo& rhs) const;
+            bool operator()(const UserLoginInfo& lhs, const std::string& rhs) const;
+            bool operator()(const std::string& lhs, const UserLoginInfo& rhs) const;
         };
     };
 
-    struct Message {
+    struct Notification {
         std::time_t sendTime_;
         std::string content_;
     };
 
-    struct Chat {
-        UserList* firstUser;
-        UserList* second_user;
+    struct UserPair {
+        UserLoginInfo* firstUserLoginInfo;
+        UserLoginInfo* secondUserLoginInfo;
     };
 
-    struct SessionList {
+    struct ConnectionStatus {
         enum Status: unsigned char {
             NotAuthorized = 0x00,
             Authorized = 0x01,
             ErrorInvalid = 0xFF
         }status;
         TCPInterfaceBase *socket;
-        UserList* userList = nullptr;
+        UserLoginInfo* userCredentials = nullptr;
     };
 
-    class UserInfoTable {
-        std::shared_mutex mutexTable;
-        std::set<UserList, UserList::Comparator> userTable_;
+    static class UserManager {
+        std::shared_mutex sharedMutex;
+        std::set<UserLoginInfo, UserLoginInfo::Comparator> userLoginInfoSet;
     public:
-        UserInfoTable() = default;
+        UserManager() = default;
 
-        UserList* registredUser(std::string name, std::string pass);
-        UserList* authorizeUser(UserList name, std::string pass);
-        UserList* findUser(UserList name);
-    }userInfoTable;
+        UserLoginInfo* Registred(std::string name, std::string pass);
+        UserLoginInfo* Authorize(UserLoginInfo name, std::string pass);
+        UserLoginInfo* Find(UserLoginInfo name);
+    } userManager;
 
-    struct ClientKey{ uint32_t host; uint16_t port; };
+    struct ConnectionInfo : public Server::ConnectionStatus { uint32_t host; uint16_t port; };
 
-    class SessionConnectionTable {
+    class SessionManager {
+    private:
         struct SessionComparator {
-            using isTransp = std::true_type;
+            using InfoComparator = std::true_type;
 
-            bool operator ()(const SessionList& lhs, const SessionList& rhs) const;
-
-            bool operator ()(const SessionList& lhs, const ClientKey& rhs) const {
-                return (uint64_t(lhs.socket->GetHost()) | uint64_t(lhs.socket->GetPort()) << 32) < (uint64_t(rhs.host) | uint64_t(rhs.port) << 32);
-            }
-
-            bool operator ()(const ClientKey& lhs, const SessionList& rhs) const {
-                return (uint64_t(lhs.host) | uint64_t(lhs.port) << 32) < (uint64_t(rhs.socket->GetHost()) | uint64_t(rhs.socket->GetPort()) << 32);
-            }
+            bool operator ()(const ConnectionStatus& lhs, const ConnectionStatus& rhs) const;
+            bool operator ()(const ConnectionStatus& lhs, const ConnectionInfo& rhs) const;
+            bool operator ()(const ConnectionInfo& lhs, const ConnectionStatus& rhs) const;
         };
-    };
 
+        using SessionConnectionIterator = std::set<ConnectionStatus, SessionComparator>::iterator;
 
+        struct UserComparator {
+            using InfoComparator = std::true_type;
+
+            inline bool operator ()(const SessionConnectionIterator& lhs, const SessionConnectionIterator& rhs) const;
+            inline bool operator ()(const SessionConnectionIterator& lhs, UserLoginInfo* rhs) const;
+            inline bool operator ()(UserLoginInfo* lhs, const SessionConnectionIterator& rhs) const;
+        };
+
+        mutable std::shared_mutex idSessionIdentifierMutex;
+        mutable std::shared_mutex userIdentifierMutex;
+
+        std::set<ConnectionStatus, SessionComparator> idSessionIdentifier;
+        std::multiset<SessionConnectionIterator, UserComparator> userIdentifier;
+    public:
+        SessionManager() = default;
+        
+        bool AddSession(TCPInterfaceBase *socket);
+        bool DeleteSession(TCPInterfaceBase* socket);
+        bool RegistredUser(TCPInterfaceBase* socket, std::string username, std::string password);
+        bool AuthorizeUser(TCPInterfaceBase* socket, std::string username, std::string password);
+        bool Logout(TCPInterfaceBase* socket);
+
+        std::list<TCPInterfaceBase*> findSocketListByUsername(std::string username);
+        std::string GetUsername(TCPInterfaceBase* socket);
+        ConnectionStatus::Status GetStatus (TCPInterfaceBase* socket) const;
+
+    }sessionManager;
 
     struct ClientSessionComparator {
-        using is_transparent = std::true_type;
+        using InfoComparator = std::true_type;
 
         bool operator()(const std::unique_ptr<InterfaceClientSession>& lhs, const std::unique_ptr<InterfaceClientSession>& rhs) const;
-        bool operator()(const std::unique_ptr<InterfaceClientSession>& lhs, const ClientKey& rhs) const;
-        bool operator()(const ClientKey& lhs, const std::unique_ptr<InterfaceClientSession>& rhs) const;
+        bool operator()(const std::unique_ptr<InterfaceClientSession>& lhs, const ConnectionInfo& rhs) const;
+        bool operator()(const ConnectionInfo& lhs, const std::unique_ptr<InterfaceClientSession>& rhs) const;
     };
 
     void printUserInfo(const UserInfo& userInfo);
@@ -275,7 +301,15 @@ public:
     bool ServerDisconnectBy(uint32_t host, uint16_t port);
     void ServerDisconnectAll();
 
+    void HandleRegisterUser(Server::InterfaceClientSession &client, uint16_t codeSequence,
+                            const std::string& username, const std::string& password);
+    void HandleAuthorize(InterfaceClientSession& client, uint16_t act_sequence,
+                         const std::string& nickname, const std::string& password_hash);
+    void HandleSendTo(Server::InterfaceClientSession &client, uint16_t codeSequence,
+                      const std::string& recipientUsername, const std::string& message);
+
 private:
+
     std::unordered_map<std::string, std::vector<UserInfo>> users;
     std::mutex usersMutex;
 

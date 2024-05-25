@@ -22,16 +22,17 @@ Server server(8081,
 #ifdef DEGUGLOG
                   std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
 #endif
-                  client.AutentficateUserInfo(dataBuffer,client, server);
-                  //client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
+                    client.HandleData(dataBuffer, server);
+                    //client.AutentficateUserInfo(dataBuffer,client, server);
+                    //client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
               },
               [](Server::InterfaceClientSession& client){
-                  std::cout << "Client " << getHostStr(client) << " Connected\n";
+                    std::cout << "Client " << getHostStr(client) << " Connected\n";
               },
               [](Server::InterfaceClientSession& client){
-                  std::cout << "Client " << getHostStr(client) << " disconnected\n";
-                  client.OnDisconnect(client, server);
-                  Server::InterfaceClientSession::WriteToDB(client, server);
+                    std::cout << "Client " << getHostStr(client) << " disconnected\n";
+                    client.OnDisconnect(client, server);
+                    Server::InterfaceClientSession::WriteToDB(client, server);
               },
               std::thread::hardware_concurrency()
 );

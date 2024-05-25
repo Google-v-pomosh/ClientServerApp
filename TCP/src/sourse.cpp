@@ -58,3 +58,19 @@ void NetworkThreadPool::StartThreads(uint32_t thread_count) {
         ConfigureThreadPool(thread_count);
     }
 }
+
+std::string NetworkThreadPool::ExtractString(DataBuffer_t::const_iterator &it) {
+    std::string result;
+    while (*it != '\0') {
+        result += *it;
+        ++it;
+    }
+    ++it;
+    return result;
+}
+
+void NetworkThreadPool::AppendString(DataBuffer_t &buffer, std::string_view str) {
+    Append<uint64_t>(buffer, str.size());
+    for(const char& ch : str)
+        buffer.push_back(reinterpret_cast<const uint8_t&>(ch));
+}

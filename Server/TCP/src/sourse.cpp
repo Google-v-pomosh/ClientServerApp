@@ -528,6 +528,99 @@ void Server::clearUser(const std::string &username) {
     }
 }
 
+void Server::HandleRegisterUser(Server::InterfaceClientSession &client, uint16_t codeSequence,
+                                const std::string &username, const std::string &password) {
+#pragma pack(push, 1)
+    struct {
+        uint16_t codeSequence_;
+        ResponseCode responseCode_;
+    } response {
+            codeSequence,
+            sessionManager.RegistredUser(&client, username, password) ? ResponseCode::AuthenticationOk : ResponseCode::AuthenticationFail
+    };
+#pragma pack(pop)
+
+    client.SendData(&response, sizeof(response));
+}
+
+void Server::HandleAuthorize(Server::InterfaceClientSession &client, uint16_t codeSequence,
+                             const std::string &username, const std::string &password) {
+#pragma pack(push, 1)
+    struct {
+        uint16_t codeSequence_;
+        ResponseCode responseCode_;
+    } response {
+            codeSequence,
+            sessionManager.AuthorizeUser(&client, username, password) ? ResponseCode::AuthenticationOk : ResponseCode::AuthenticationFail
+    };
+#pragma pack(pop)
+
+    client.SendData(&response, sizeof(response));
+}
+
+void Server::HandleSendTo(Server::InterfaceClientSession &client, uint16_t codeSequence,
+                          const std::string &recipientUsername, const std::string &message) {
+    if (sessionManager.GetStatus(&client) != ConnectionStatus::Authorized) {
+#pragma pack(push, 1)
+        struct {
+            uint16_t codeSequence_;
+            ResponseCode responseCode_;
+        } response {
+                codeSequence,
+                ResponseCode::AccessDenied
+        };
+#pragma pack(pop)
+        client.SendData(&response, sizeof(response));
+        return;
+    }
+
+    std::string sender_username = sessionManager.GetUsername(&client);
+    auto recipient_sockets = sessionManager.findSocketListByUsername(sender_username);
+
+    if (recipient_sockets.empty()) {
+#pragma pack(push, 1)
+        struct {
+            uint16_t codeSequence_;
+            ResponseCode responseCode_;
+        } response {
+                codeSequence,
+                ResponseCode::SendingFail
+        };
+#pragma pack(pop)
+        client.SendData(&response, sizeof(response));
+        return;
+    }
+
+    DataBuffer_t message_buffer;
+    message_buffer.reserve(
+            sizeof(uint16_t) + // act_sequence
+            sizeof(ResponseCode) + // response_code
+            sizeof(uint64_t) + // sender_nickname_size
+            sender_username.size() + // sender_username
+            sizeof(uint64_t) +
+            message.size()
+    );
+
+    NetworkThreadPool::Append(message_buffer, uint16_t(-1));
+    NetworkThreadPool::Append(message_buffer, ResponseCode::IncomingMessage);
+    NetworkThreadPool::AppendString(message_buffer, sender_username);
+    NetworkThreadPool::AppendString(message_buffer, message);
+
+    for (auto& recipient_socket : recipient_sockets)
+        recipient_socket->SendData(message_buffer.data(), message_buffer.size());
+
+#pragma pack(push, 1)
+    struct {
+        uint16_t act_sequence;
+        ResponseCode response_code;
+    } response {
+            codeSequence,
+            ResponseCode::SendingOk
+    };
+#pragma pack(pop)
+    client.SendData(&response, sizeof(response));
+}
+
 Server::InterfaceClientSession::InterfaceClientSession(SocketHandle_t socket, SocketAddressIn_t address)
         : m_address_(address), m_socketDescriptor_(socket){
     SetFirstConnectionTime();
@@ -719,7 +812,7 @@ bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& da
 
     if(start == std::string::npos || end == std::string::npos || start >= end){
 #ifdef DEBUGLOG
-        //std::cerr << "Message format error\n";
+        //std::cerr << "Notification format error\n";
 #endif
         return false;
     }
@@ -1065,7 +1158,35 @@ bool Server::InterfaceClientSession::checkHash(const std::string &content, const
     return (computedHashStr == receivedHash);
 }
 
+void Server::InterfaceClientSession::HandleData(const DataBuffer_t &data, Server &server) {
+    auto it = data.cbegin();
+    uint16_t act_sequence = NetworkThreadPool::Extract<uint16_t>(it);
+    MessageType act = NetworkThreadPool::Extract<MessageType>(it);
 
+    switch (act) {
+        case MessageType::Registered: {
+            std::string nickname =  NetworkThreadPool::ExtractString(it);
+            std::string password_hash =  NetworkThreadPool::ExtractString(it);
+            server.HandleRegisterUser(*this, act_sequence, nickname, password_hash);
+            return;
+        }
+        case MessageType::Authorize: {
+            std::string nickname = NetworkThreadPool::ExtractString(it);
+            std::string password_hash = NetworkThreadPool::ExtractString(it);
+            server.HandleAuthorize(*this, act_sequence, nickname, password_hash);
+            return;
+        }
+        case MessageType::SendingTo : {
+            std::string recipient_nickname = NetworkThreadPool::ExtractString(it);
+            std::string message = NetworkThreadPool::ExtractString(it);
+            server.HandleSendTo(*this, act_sequence, recipient_nickname, message);
+            return;
+        }
+        default:
+            std::cerr << "Unknown MessageType received: " << static_cast<int>(act) << '\n';
+            return;
+    }
+}
 
 ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
                                                KeepAliveProperty_t interval,
@@ -1092,15 +1213,15 @@ Server::UserInfo::UserInfo(std::string username,
           timeToday_(std::move(timeToday))
 {}
 
-bool Server::UserList::Comparator::operator()(const Server::UserList &lhs, const Server::UserList &rhs) const {
+bool Server::UserLoginInfo::Comparator::operator()(const Server::UserLoginInfo &lhs, const Server::UserLoginInfo &rhs) const {
     return std::less<std::string>{}(lhs.username_, rhs.username_);
 }
 
-bool Server::UserList::Comparator::operator()(const Server::UserList &lhs, const std::string &rhs) const {
+bool Server::UserLoginInfo::Comparator::operator()(const Server::UserLoginInfo &lhs, const std::string &rhs) const {
     return std::less<std::string>{}(lhs.username_, rhs);
 }
 
-bool Server::UserList::Comparator::operator()(const std::string &lhs, const Server::UserList &rhs) const {
+bool Server::UserLoginInfo::Comparator::operator()(const std::string &lhs, const Server::UserLoginInfo &rhs) const {
     return std::less<std::string>{}(lhs, rhs.username_);
 }
 
@@ -1111,33 +1232,33 @@ bool Server::ClientSessionComparator::operator()(const std::unique_ptr<Interface
 }
 
 bool Server::ClientSessionComparator::operator()(const std::unique_ptr<InterfaceClientSession> &lhs,
-                                                 const Server::ClientKey &rhs) const {
+                                                 const Server::ConnectionInfo &rhs) const {
     return  (uint64_t(lhs->GetHost()) | uint64_t(lhs->GetPort()) << 32) <
             (uint64_t(rhs.host) | uint64_t(rhs.port) << 32);
 }
 
-bool Server::ClientSessionComparator::operator()(const Server::ClientKey &lhs,
+bool Server::ClientSessionComparator::operator()(const Server::ConnectionInfo &lhs,
                                                  const std::unique_ptr<InterfaceClientSession> &rhs) const {
     return  (uint64_t(lhs.host) | uint64_t(lhs.port) << 32) <
             (uint64_t(rhs->GetHost()) | uint64_t(rhs->GetPort()) << 32);
 }
 
-Server::UserList* Server::UserInfoTable::registredUser(std::string name, std::string pass) {
-    std::lock_guard lockGuard(mutexTable);
-    auto info = userTable_.emplace(UserList{std::move(name), std::move(pass)});
+Server::UserLoginInfo* Server::UserManager::Registred(std::string name, std::string pass) {
+    std::lock_guard lockGuard(sharedMutex);
+    auto info = userLoginInfoSet.emplace(UserLoginInfo{std::move(name), std::move(pass)});
     if(info.second) {
-        return const_cast<UserList*>(&*info.first);
+        return const_cast<UserLoginInfo*>(&*info.first);
     } else {
         return nullptr;
     }
 }
 
-Server::UserList* Server::UserInfoTable::authorizeUser(UserList name, std::string pass) {
-    std::lock_guard lockGuard(mutexTable);
-    auto iterator = userTable_.find(name);
-    if(iterator != userTable_.cend()){
+Server::UserLoginInfo* Server::UserManager::Authorize(UserLoginInfo name, std::string pass) {
+    std::lock_guard lockGuard(sharedMutex);
+    auto iterator = userLoginInfoSet.find(name);
+    if(iterator != userLoginInfoSet.cend()){
         if(iterator -> password_ == pass) {
-            return const_cast<UserList*>(&*iterator);
+            return const_cast<UserLoginInfo*>(&*iterator);
         } else {
             return nullptr;
         }
@@ -1145,18 +1266,189 @@ Server::UserList* Server::UserInfoTable::authorizeUser(UserList name, std::strin
     return nullptr;
 }
 
-Server::UserList *Server::UserInfoTable::findUser(UserList name) {
-    std::lock_guard lockGuard(mutexTable);
-    auto iterator = userTable_.find(name);
-    if (iterator != userTable_.cend()) {
-        return const_cast<UserList *>(&*iterator);
+Server::UserLoginInfo *Server::UserManager::Find(UserLoginInfo name) {
+    std::lock_guard lockGuard(sharedMutex);
+    auto iterator = userLoginInfoSet.find(name);
+    if (iterator != userLoginInfoSet.cend()) {
+        return const_cast<UserLoginInfo *>(&*iterator);
     } else {
         return nullptr;
     }
 }
 
-bool Server::SessionConnectionTable::SessionComparator::operator()(const Server::SessionList &lhs,
-                                                                   const Server::SessionList &rhs) const {
+bool Server::SessionManager::SessionComparator::operator()(const Server::ConnectionStatus &lhs,
+                                                           const Server::ConnectionStatus &rhs) const {
     return (uint64_t(lhs.socket->GetHost()) | uint64_t(lhs.socket->GetPort()) << 32) <
            (uint64_t(rhs.socket->GetHost()) | uint64_t(rhs.socket->GetPort()) << 32);
 }
+
+bool Server::SessionManager::SessionComparator::operator()(const Server::ConnectionStatus &lhs,
+                                                           const Server::ConnectionInfo &rhs) const {
+    return (uint64_t(lhs.socket->GetHost()) | uint64_t(lhs.socket->GetPort()) << 32) <
+            (uint64_t(rhs.host) | uint64_t(rhs.port) << 32);
+}
+
+bool Server::SessionManager::SessionComparator::operator()(const Server::ConnectionInfo &lhs,
+                                                           const Server::ConnectionStatus &rhs) const {
+    return  (uint64_t(lhs.host) | uint64_t(lhs.port) << 32) <
+            (uint64_t(rhs.socket->GetHost()) | uint64_t(rhs.socket->GetPort()) << 32);
+}
+
+bool Server::SessionManager::UserComparator::operator()(
+        const Server::SessionManager::SessionConnectionIterator &lhs,
+        const Server::SessionManager::SessionConnectionIterator &rhs) const {
+    return lhs->userCredentials < rhs->userCredentials;
+}
+
+bool Server::SessionManager::UserComparator::operator()(
+        const Server::SessionManager::SessionConnectionIterator &lhs, Server::UserLoginInfo *rhs) const {
+    return lhs->userCredentials < rhs;
+}
+
+bool Server::SessionManager::UserComparator::operator()(Server::UserLoginInfo *lhs,
+                                                        const Server::SessionManager::SessionConnectionIterator &rhs) const {
+    return lhs < rhs->userCredentials;
+}
+
+bool Server::SessionManager::AddSession(TCPInterfaceBase *socket) {
+    std::lock_guard lockGuard(idSessionIdentifierMutex);
+    return idSessionIdentifier.emplace(ConnectionStatus{ConnectionStatus::Status::NotAuthorized, socket}).second;
+}
+
+bool Server::SessionManager::DeleteSession(TCPInterfaceBase *socket) {
+    std::lock_guard lock(idSessionIdentifierMutex);
+    auto sessionIterator = idSessionIdentifier.find(ConnectionInfo{.host = socket->GetHost(), .port = socket->GetPort()});
+    if(sessionIterator == idSessionIdentifier.end()) return false;
+    idSessionIdentifier.erase(sessionIterator);
+    return true;
+}
+
+std::string Server::SessionManager::GetUsername(TCPInterfaceBase *socket) {
+    idSessionIdentifierMutex.lock_shared();
+    auto sessionIterator = idSessionIdentifier.find(ConnectionInfo{.host = socket->GetHost(), .port = socket->GetPort()});
+    idSessionIdentifierMutex.unlock_shared();
+    if(sessionIterator == idSessionIdentifier.end()) return "";
+    if(!sessionIterator->userCredentials) return "";
+    return sessionIterator->userCredentials->username_;
+}
+
+Server::ConnectionStatus::Status Server::SessionManager::GetStatus(TCPInterfaceBase *socket) const {
+    idSessionIdentifierMutex.lock_shared();
+    auto session_it = idSessionIdentifier.find(ConnectionInfo{.host = socket->GetHost(), .port = socket->GetPort()});
+    idSessionIdentifierMutex.unlock_shared();
+    if(session_it == idSessionIdentifier.end()) return ConnectionStatus::Status::ErrorInvalid;
+    return session_it->status;
+}
+
+Server::UserManager Server::userManager;
+
+bool Server::SessionManager::RegistredUser(TCPInterfaceBase *socket, std::string username, std::string password) {
+    std::shared_lock lock(idSessionIdentifierMutex);
+    auto sessionIterator = idSessionIdentifier.find(ConnectionInfo{.host = socket->GetHost(), .port = socket->GetPort()});
+    if (sessionIterator == idSessionIdentifier.end()) {
+        return false;
+    }
+    lock.unlock();
+
+    UserLoginInfo* newUserList = userManager.Registred(std::move(username), std::move(password));
+    if (!newUserList) {
+        return false;
+    }
+
+    {
+        std::unique_lock lock(userIdentifierMutex);
+        if (sessionIterator->userCredentials) {
+            auto range = userIdentifier.equal_range(sessionIterator);
+            for (auto it = range.first; it != range.second; ++it) {
+                if (*it == sessionIterator) {
+                    userIdentifier.erase(it);
+                    break;
+                }
+            }
+        }
+        const_cast<UserLoginInfo*&>(sessionIterator->userCredentials) = newUserList;
+        const_cast<ConnectionStatus::Status&>(sessionIterator->status) = ConnectionStatus::Status::Authorized;
+        userIdentifier.emplace(sessionIterator);
+    }
+    return true;
+}
+
+bool Server::SessionManager::AuthorizeUser(TCPInterfaceBase *socket, std::string username, std::string password) {
+    std::shared_lock idLock(idSessionIdentifierMutex);
+    auto sessionIterator = idSessionIdentifier.find(ConnectionInfo{.host = socket->GetHost(), .port = socket->GetPort()});
+    if (sessionIterator == idSessionIdentifier.end()) {
+        return false;
+    }
+    idLock.unlock();
+
+    UserLoginInfo userInfo{username, password};
+    UserLoginInfo* authorizedUser = userManager.Authorize(userInfo, password);
+    if (!authorizedUser) {
+        return false;
+    }
+
+    {
+        std::unique_lock userLock(userIdentifierMutex);
+        if (sessionIterator->userCredentials) {
+            auto range = userIdentifier.equal_range(sessionIterator);
+            for (auto it = range.first; it != range.second; ++it) {
+                if (*it == sessionIterator) {
+                    userIdentifier.erase(it);
+                    break;
+                }
+            }
+        }
+
+        const_cast<UserLoginInfo*&>(sessionIterator->userCredentials) = authorizedUser;
+        const_cast<ConnectionStatus::Status&>(sessionIterator->status) = ConnectionStatus::Status::Authorized;
+        userIdentifier.emplace(sessionIterator);
+    }
+
+    return true;
+}
+
+bool Server::SessionManager::Logout(TCPInterfaceBase *socket) {
+    idSessionIdentifierMutex.lock_shared();
+    auto sessionIterator = idSessionIdentifier.find(ConnectionInfo{.host = socket->GetHost(), .port = socket->GetPort()});
+    idSessionIdentifierMutex.unlock_shared();
+
+    if (sessionIterator == idSessionIdentifier.end()) {
+        return false;
+    }
+
+    {
+        std::unique_lock userLock(userIdentifierMutex);
+        if (sessionIterator->userCredentials) {
+            auto range = userIdentifier.equal_range(sessionIterator);
+            for (auto it = range.first; it != range.second; ++it) {
+                if (*it == sessionIterator) {
+                    userIdentifier.erase(it);
+                    break;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+
+    const_cast<UserLoginInfo*&>(sessionIterator->userCredentials) = nullptr;
+    const_cast<ConnectionStatus::Status&>(sessionIterator->status) = ConnectionStatus::Status::NotAuthorized;
+    return true;
+}
+
+std::list<TCPInterfaceBase *> Server::SessionManager::findSocketListByUsername(std::string username) {
+    std::list<TCPInterfaceBase*> socket_list;
+    std::shared_lock lock(userIdentifierMutex);
+    UserLoginInfo userLoginInfo = {std::move(username), ""};
+    UserLoginInfo* user = userManager.Find(userLoginInfo);
+    if(!user) {
+        return {};
+    }
+    for (const auto& sessionIt : userIdentifier) {
+        if (sessionIt->userCredentials == user) {
+            socket_list.emplace_back(sessionIt->socket);
+        }
+    }
+    return socket_list;
+}
+

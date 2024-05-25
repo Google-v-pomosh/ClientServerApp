@@ -43,6 +43,12 @@ typedef int KeepAliveProperty_t;
 
 constexpr uint32_t kLocalhostIP = 0x0100007f;
 
+enum class MessageType : unsigned char {
+    Registered = 0x00,
+    Authorize = 0x01,
+    SendingTo = 0x02
+};
+
 enum class ResponseCode : unsigned char {
     AuthenticationOk = 0x00,
     AuthenticationFail = 0x01,
@@ -69,6 +75,7 @@ enum class ConnectionType : uint8_t {
     Server = 1
 };
 
+//TODO
 struct MessageTypes {
     [[maybe_unused]] static const int SendAuthenticationUser = 0;
     static const int SendMessageTo = 1;
@@ -102,6 +109,23 @@ public:
     void AddTask(const A& work, const Arg&... args) {
         AddTask([work, args...]{work(args...);});
     }
+
+    template<typename T>
+    static T Extract(DataBuffer_t::const_iterator& it) {
+        T result;
+        std::memcpy(&result, &(*it), sizeof(T));
+        it += sizeof(T);
+        return result;
+    }
+    static std::string ExtractString(DataBuffer_t::const_iterator &it);
+
+    template<typename T>
+    static void Append(DataBuffer_t& buffer, const T& data) {
+        const uint8_t* data_it = reinterpret_cast<const uint8_t*>(&data);
+        for(std::size_t data_size = sizeof(T); data_size; (--data_size, ++data_it))
+            buffer.push_back(*data_it);
+    }
+    static void AppendString(DataBuffer_t& buffer, std::string_view str);
 
     explicit NetworkThreadPool(uint32_t thread_count = HARDWARE_CONCURRENCY) { ConfigureThreadPool(thread_count);};
     ~NetworkThreadPool();

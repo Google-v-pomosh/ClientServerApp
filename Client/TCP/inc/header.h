@@ -103,14 +103,15 @@ private:
     std::string recivername_;
 
 public:
-    template<typename T>
-    T extract(DataBuffer_t::iterator& it) {
+    //TODO
+    /*template<typename T>
+    T Extract(DataBuffer_t::iterator& it) {
         T result = *reinterpret_cast<T*>(&*it);
         it += sizeof(T);
         return result;
     }
 
-    std::string ExtractString(DataBuffer_t::iterator& it);
+    std::string ExtractString(DataBuffer_t::iterator& it);*/
 
     void sha256_transform(SHA256_CTX *ctx, const BYTE data[]);
     void sha256_init(SHA256_CTX *ctx);
