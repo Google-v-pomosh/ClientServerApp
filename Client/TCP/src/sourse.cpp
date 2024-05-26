@@ -416,7 +416,7 @@ bool Client::SendMessageTo(const std::string &recipientId, const std::string &me
     return SendData(framedMessage.c_str(), framedMessage.size());
 }
 
-bool Client::SendAuthData() {
+/*bool Client::SendAuthData() {
     std::string username = m_pcDataReqest_.GetUser();
     int messageType = MessageTypes::SendAuthenticationUser;
 
@@ -432,11 +432,11 @@ bool Client::SendAuthData() {
     stopPoint +=('\x7C');
     stopPoint +='\x3E';
 
-    authData = username + ":" + password;
+    authData = std::to_string(messageType) + "{" + username + ":" + password + "}";
 
     std::string hash = calculateHash(authData);
 
-    authData = startPoint + std::to_string(messageType) + "{" + authData + "}" + stopPoint + ":" + hash;
+    authData = startPoint + authData + stopPoint + ":" + hash;
 #ifdef DEBUGLOG
     std::cout << "authData: " << authData << std::endl;
 #endif
@@ -446,6 +446,39 @@ bool Client::SendAuthData() {
     }
 
     return true;
+}*/
+
+bool Client::SendAuthData() {
+    std::string username = m_pcDataReqest_.GetUser();
+    std::string password = GeneratePassword();
+
+    std::string hash = calculateHash(username + password);
+
+    DataBuffer_t buffer;
+    buffer.reserve(
+            sizeof(uint16_t) + // act_sequence
+            sizeof(MessageType) + // act_code
+            sizeof(uint64_t) + // login_size
+            username.size() + // login
+            sizeof(uint64_t) + // password_size
+            password.size() + // password
+            hash.size()
+    );
+
+    NetworkThreadPool::Append(buffer, actSequence);
+    NetworkThreadPool::Append(buffer, MessageType::Registered);
+    NetworkThreadPool::AppendString(buffer, username);
+    NetworkThreadPool::AppendString(buffer, password);
+    NetworkThreadPool::AppendString(buffer, hash);
+
+    SendData(buffer.data(), buffer.size());
+    if (requestAuthenticate(actSequence++) == ResponseCode::AuthenticationOk) {
+        return true;
+    } else {
+        std::cerr << "Authentication failed!\n";
+        return false;
+    }
+
 }
 
 uint32_t Client::GetHost() const {
@@ -781,7 +814,7 @@ std::string Client::calculateHash(const std::string &data) {
 }
 
 void Client::ReciveHandler(DataBuffer_t dataBuffer) {
-    auto dataIterator = dataBuffer.cbegin();
+    auto dataIterator = dataBuffer.begin();
     uint16_t extractedValue = NetworkThreadPool::Extract<uint16_t>(dataIterator);
     ResponseCode responseCode = NetworkThreadPool::Extract<ResponseCode>(dataIterator);
     switch (responseCode) {
@@ -855,6 +888,12 @@ void Client::clearConsole() {
 #else
     std::cout << "\x1B[2J\x1B[H";
 #endif
+}
+
+ResponseCode Client::requestAuthenticate(uint16_t actSequanse) {
+    std::unique_lock lk(m_authenticationMutex_);
+    m_authenticationIO.wait(lk, [&actSequanse, this]{ return authenticationActExtracted_ == actSequanse; });
+    return m_authenticationResponse;
 }
 
 

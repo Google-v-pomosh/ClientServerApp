@@ -82,6 +82,7 @@ private:
     std::mutex m_authenticationMutex_;
 
     uint16_t authenticationActExtracted_;
+    uint16_t actSequence = 0;
 
     std::function<void(DataBuffer_t)> m_dataHandlerFunction = [](const DataBuffer_t&){};
     std::condition_variable m_authenticationIO;
@@ -103,16 +104,6 @@ private:
     std::string recivername_;
 
 public:
-    //TODO
-    /*template<typename T>
-    T Extract(DataBuffer_t::iterator& it) {
-        T result = *reinterpret_cast<T*>(&*it);
-        it += sizeof(T);
-        return result;
-    }
-
-    std::string ExtractString(DataBuffer_t::iterator& it);*/
-
     void sha256_transform(SHA256_CTX *ctx, const BYTE data[]);
     void sha256_init(SHA256_CTX *ctx);
     void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
@@ -146,6 +137,7 @@ public:
     [[nodiscard]] std::string GeneratePassword() const ;
     [[nodiscard]] ConnectionType GetType() const override { return ConnectionType::Client;}
     std::string calculateHash(const std::string& data);
+    ResponseCode requestAuthenticate(uint16_t actSequanse);
 
     PcDataReqest m_pcDataReqest_;
 

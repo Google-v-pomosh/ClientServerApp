@@ -26,6 +26,7 @@
 #include <WinSock2.h>
 #include <mstcpip.h>
 #include <set>
+#include <optional>
 
 #else // *nix
 #include <sys/socket.h>
@@ -116,7 +117,7 @@ public:
         bool SendData(const void* buffer, size_t size) const override;
 
         bool AutentficateUserInfo(const DataBuffer_t& data,Server::InterfaceClientSession& client, Server& server);
-        void HandleData(const DataBuffer_t& data, Server& server);
+        void HandleData(DataBuffer_t& data, Server& server);
 
         [[nodiscard]] ConnectionType GetType() const override {return ConnectionType::Server;}
 
@@ -187,7 +188,7 @@ public:
             Authorized = 0x01,
             ErrorInvalid = 0xFF
         }status;
-        TCPInterfaceBase *socket;
+        TCPInterfaceBase *socket{};
         UserLoginInfo* userCredentials = nullptr;
     };
 
@@ -202,7 +203,7 @@ public:
         UserLoginInfo* Find(UserLoginInfo name);
     } userManager;
 
-    struct ConnectionInfo : public Server::ConnectionStatus { uint32_t host; uint16_t port; };
+    struct ConnectionInfo : public Server::ConnectionStatus { uint32_t host{}; uint16_t port{}; };
 
     class SessionManager {
     private:

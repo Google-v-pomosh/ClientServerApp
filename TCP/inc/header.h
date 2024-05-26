@@ -77,7 +77,7 @@ enum class ConnectionType : uint8_t {
 
 //TODO
 struct MessageTypes {
-    [[maybe_unused]] static const int SendAuthenticationUser = 0;
+    [[maybe_unused]] static const int SendAuthenticationUser = 0x00;
     static const int SendMessageTo = 1;
 };
 
@@ -110,14 +110,14 @@ public:
         AddTask([work, args...]{work(args...);});
     }
 
+
     template<typename T>
-    static T Extract(DataBuffer_t::const_iterator& it) {
-        T result;
-        std::memcpy(&result, &(*it), sizeof(T));
+    static T Extract(DataBuffer_t::iterator &it) {
+        T result = *reinterpret_cast<T*>(&*it);
         it += sizeof(T);
         return result;
     }
-    static std::string ExtractString(DataBuffer_t::const_iterator &it);
+    static std::string ExtractString(DataBuffer_t::iterator &it);
 
     template<typename T>
     static void Append(DataBuffer_t& buffer, const T& data) {

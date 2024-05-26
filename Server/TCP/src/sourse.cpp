@@ -154,7 +154,7 @@ uint16_t Server::SetServerPort(const uint16_t port) {
 }
 
 SocketStatusInfo Server::StartServer() {
-    std::cout << __FUNCTION__ << std::endl;
+    //std::cout << __FUNCTION__ << std::endl;
     int flag;
     if(m_serverStatus_ == SocketStatusInfo::Connected) {
         StopServer();
@@ -593,10 +593,10 @@ void Server::HandleSendTo(Server::InterfaceClientSession &client, uint16_t codeS
 
     DataBuffer_t message_buffer;
     message_buffer.reserve(
-            sizeof(uint16_t) + // act_sequence
-            sizeof(ResponseCode) + // response_code
-            sizeof(uint64_t) + // sender_nickname_size
-            sender_username.size() + // sender_username
+            sizeof(uint16_t) +
+            sizeof(ResponseCode) +
+            sizeof(uint64_t) +
+            sender_username.size() +
             sizeof(uint64_t) +
             message.size()
     );
@@ -628,7 +628,7 @@ Server::InterfaceClientSession::InterfaceClientSession(SocketHandle_t socket, So
 
 
 Server::InterfaceClientSession::~InterfaceClientSession(){
-    std::cout << __FUNCTION__ << std::endl;
+    //std::cout << __FUNCTION__ << std::endl;
     InterfaceClientSession::Disconnect();
 #ifdef _WIN32
     if(m_socketDescriptor_ == INVALID_SOCKET) {
@@ -646,7 +646,7 @@ Server::InterfaceClientSession::~InterfaceClientSession(){
 }
 
 TCPInterfaceBase::SockStatusInfo_t Server::InterfaceClientSession::Disconnect() {
-    std::cout << __FUNCTION__ << std::endl;
+    //std::cout << __FUNCTION__ << std::endl;
     SetLastDisconnectionTime();
     m_connectionStatus_ = SockStatusInfo_t::Disconnected;
 #ifdef _WIN32
@@ -1158,28 +1158,35 @@ bool Server::InterfaceClientSession::checkHash(const std::string &content, const
     return (computedHashStr == receivedHash);
 }
 
-void Server::InterfaceClientSession::HandleData(const DataBuffer_t &data, Server &server) {
-    auto it = data.cbegin();
-    uint16_t act_sequence = NetworkThreadPool::Extract<uint16_t>(it);
+void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &server) {
+    auto it = data.begin();
+    uint16_t code_sequence = NetworkThreadPool::Extract<uint16_t>(it);
     MessageType act = NetworkThreadPool::Extract<MessageType>(it);
 
     switch (act) {
         case MessageType::Registered: {
-            std::string nickname =  NetworkThreadPool::ExtractString(it);
-            std::string password_hash =  NetworkThreadPool::ExtractString(it);
-            server.HandleRegisterUser(*this, act_sequence, nickname, password_hash);
+            std::string user_name =  NetworkThreadPool::ExtractString(it);
+            std::string pass_word =  NetworkThreadPool::ExtractString(it);
+            std::string hash = NetworkThreadPool::ExtractString(it);
+            if(!checkHash(user_name + pass_word, hash)){
+#ifdef DEBUGLOG
+                std::cerr << "Hash mismatch\n";
+#endif
+                return;
+            }
+            server.HandleRegisterUser(*this, code_sequence, user_name, pass_word);
             return;
         }
         case MessageType::Authorize: {
-            std::string nickname = NetworkThreadPool::ExtractString(it);
-            std::string password_hash = NetworkThreadPool::ExtractString(it);
-            server.HandleAuthorize(*this, act_sequence, nickname, password_hash);
+            std::string user_name = NetworkThreadPool::ExtractString(it);
+            std::string password = NetworkThreadPool::ExtractString(it);
+            server.HandleAuthorize(*this, code_sequence, user_name, password);
             return;
         }
         case MessageType::SendingTo : {
-            std::string recipient_nickname = NetworkThreadPool::ExtractString(it);
+            std::string recipient_username = NetworkThreadPool::ExtractString(it);
             std::string message = NetworkThreadPool::ExtractString(it);
-            server.HandleSendTo(*this, act_sequence, recipient_nickname, message);
+            server.HandleSendTo(*this, code_sequence, recipient_username, message);
             return;
         }
         default:
@@ -1187,6 +1194,8 @@ void Server::InterfaceClientSession::HandleData(const DataBuffer_t &data, Server
             return;
     }
 }
+
+
 
 ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
                                                KeepAliveProperty_t interval,
@@ -1451,4 +1460,3 @@ std::list<TCPInterfaceBase *> Server::SessionManager::findSocketListByUsername(s
     }
     return socket_list;
 }
-

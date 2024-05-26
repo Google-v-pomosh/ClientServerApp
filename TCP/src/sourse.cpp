@@ -59,14 +59,11 @@ void NetworkThreadPool::StartThreads(uint32_t thread_count) {
     }
 }
 
-std::string NetworkThreadPool::ExtractString(DataBuffer_t::const_iterator &it) {
-    std::string result;
-    while (*it != '\0') {
-        result += *it;
-        ++it;
-    }
-    ++it;
-    return result;
+std::string NetworkThreadPool::ExtractString(DataBuffer_t::iterator &it) {
+    uint64_t string_size = Extract<uint64_t>(it);
+    std::string string(reinterpret_cast<std::string::value_type*>(&*it), string_size);
+    it += string_size;
+    return string;
 }
 
 void NetworkThreadPool::AppendString(DataBuffer_t &buffer, std::string_view str) {
