@@ -309,6 +309,8 @@ public:
     void HandleSendTo(Server::InterfaceClientSession &client, uint16_t codeSequence,
                       const std::string& recipientUsername, const std::string& message);
 
+    bool IsUserRegistered(const std::string& username) const;
+
 private:
 
     std::unordered_map<std::string, std::vector<UserInfo>> users;

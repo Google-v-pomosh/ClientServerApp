@@ -849,14 +849,6 @@ void Client::ReciveHandler(DataBuffer_t dataBuffer) {
     }
 }
 
-//TODO
-/*std::string Client::ExtractString(std::vector<uint8_t>::iterator &it) {
-    uint64_t string_size = Extract<uint64_t>(it);
-    std::string string(reinterpret_cast<std::string::value_type*>(&*it), string_size);
-    it += string_size;
-    return string;
-}*/
-
 void Client::UpdateSpace() {
     clearConsole();
     for(const auto &message: m_messageList_) {

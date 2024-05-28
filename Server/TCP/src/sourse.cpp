@@ -621,6 +621,12 @@ void Server::HandleSendTo(Server::InterfaceClientSession &client, uint16_t codeS
     client.SendData(&response, sizeof(response));
 }
 
+bool Server::IsUserRegistered(const std::string &username) const {
+    UserLoginInfo userLoginInfo;
+    userLoginInfo.username_ = username;
+    return userManager.Find(userLoginInfo) != nullptr;
+}
+
 Server::InterfaceClientSession::InterfaceClientSession(SocketHandle_t socket, SocketAddressIn_t address)
         : m_address_(address), m_socketDescriptor_(socket){
     SetFirstConnectionTime();
@@ -1163,12 +1169,25 @@ void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &serv
     uint16_t code_sequence = NetworkThreadPool::Extract<uint16_t>(it);
     MessageType act = NetworkThreadPool::Extract<MessageType>(it);
 
+    std::string user_name;
+    std::string pass_word;
+
+    if (act == MessageType::Registered) {
+        user_name = NetworkThreadPool::ExtractString(it);
+        pass_word = NetworkThreadPool::ExtractString(it);
+        if (server.IsUserRegistered(user_name)) {
+            act = MessageType::Authorize;
+        }
+    }
+
     switch (act) {
         case MessageType::Registered: {
-            std::string user_name =  NetworkThreadPool::ExtractString(it);
-            std::string pass_word =  NetworkThreadPool::ExtractString(it);
+            if (user_name.empty() && pass_word.empty()) {
+                user_name = NetworkThreadPool::ExtractString(it);
+                pass_word = NetworkThreadPool::ExtractString(it);
+            }
             std::string hash = NetworkThreadPool::ExtractString(it);
-            if(!checkHash(user_name + pass_word, hash)){
+            if (!checkHash(user_name + pass_word, hash)) {
 #ifdef DEBUGLOG
                 std::cerr << "Hash mismatch\n";
 #endif
@@ -1178,12 +1197,14 @@ void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &serv
             return;
         }
         case MessageType::Authorize: {
-            std::string user_name = NetworkThreadPool::ExtractString(it);
-            std::string password = NetworkThreadPool::ExtractString(it);
-            server.HandleAuthorize(*this, code_sequence, user_name, password);
+            if (user_name.empty() && pass_word.empty()) {
+                user_name = NetworkThreadPool::ExtractString(it);
+                pass_word = NetworkThreadPool::ExtractString(it);
+            }
+            server.HandleAuthorize(*this, code_sequence, user_name, pass_word);
             return;
         }
-        case MessageType::SendingTo : {
+        case MessageType::SendingTo: {
             std::string recipient_username = NetworkThreadPool::ExtractString(it);
             std::string message = NetworkThreadPool::ExtractString(it);
             server.HandleSendTo(*this, code_sequence, recipient_username, message);
