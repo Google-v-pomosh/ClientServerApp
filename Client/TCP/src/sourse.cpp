@@ -391,7 +391,7 @@ bool Client::SendData(const void *buffer, const size_t size) const {
 }
 
 
-bool Client::SendMessageTo(const std::string &recipientId, const std::string &message) {
+/*bool Client::SendMessageTo(const std::string &recipientId, const std::string &message) {
     int messageType = MessageTypes::SendMessageTo;
 
     std::string sender = m_pcDataReqest_.GetUser();
@@ -414,6 +414,39 @@ bool Client::SendMessageTo(const std::string &recipientId, const std::string &me
     framedMessage += ":" + hash;
 
     return SendData(framedMessage.c_str(), framedMessage.size());
+}*/
+
+bool Client::SendMessageTo(const std::string &recipientId, const std::string &message) {
+    const std::string& username = recipientId;
+    const std::string& message_text = message;
+
+    std::string hash = calculateHash(username + message_text);
+
+    DataBuffer_t buffer;
+
+    buffer.reserve(
+            sizeof(uint16_t) + // act_sequence
+            sizeof(MessageType) + // act_code
+            sizeof(uint64_t) + // login_size
+            username.size() + // login
+            sizeof(uint64_t) + // reciver_nickname_size
+            message_text.size() + // password
+            hash.size()
+    );
+
+    NetworkThreadPool::Append(buffer, actSequence);
+    NetworkThreadPool::Append(buffer, MessageType::SendingTo);
+    NetworkThreadPool::AppendString(buffer, username);
+    NetworkThreadPool::AppendString(buffer, message_text);
+    NetworkThreadPool::AppendString(buffer, hash);
+
+    SendData(buffer.data(), buffer.size());
+    if (requestAuthenticate(actSequence++) == ResponseCode::SendingOk) {
+        return true;
+    } else {
+        std::cerr << "Authentication failed!\n";
+        return false;
+    }
 }
 
 /*bool Client::SendAuthData() {
@@ -472,6 +505,7 @@ bool Client::SendAuthData() {
     NetworkThreadPool::AppendString(buffer, hash);
 
     SendData(buffer.data(), buffer.size());
+
     if (requestAuthenticate(actSequence++) == ResponseCode::AuthenticationOk) {
         return true;
     } else {

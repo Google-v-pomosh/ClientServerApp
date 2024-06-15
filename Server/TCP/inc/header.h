@@ -117,7 +117,12 @@ public:
         bool SendData(const void* buffer, size_t size) const override;
 
         bool AutentficateUserInfo(const DataBuffer_t& data,Server::InterfaceClientSession& client, Server& server);
-        void HandleData(DataBuffer_t& data, Server& server);
+
+        bool RegisteredUserInfo(const std::string& username, const std::string& password, Server &server, InterfaceClientSession& client);
+        bool AuthorizeUserInfo(const std::string &username, const std::string &password, Server &server,
+                               InterfaceClientSession &client);
+
+        void HandleData(DataBuffer_t& data, Server& , InterfaceClientSession& client);
 
         [[nodiscard]] ConnectionType GetType() const override {return ConnectionType::Server;}
 
@@ -160,8 +165,35 @@ public:
     };
 
     struct UserLoginInfo {
-        std::string username_{};
-        std::string password_{};
+        std::string username_;
+        std::string password_;
+        uint16_t sessionPort_{};
+        std::string connectTime_;
+        std::string disconnectTime_;
+        std::string duration_;
+        std::string timeToday_;
+
+        explicit UserLoginInfo(std::string username,
+                      std::string password,
+                      uint16_t sessionPort,
+                      std::string connectTime,
+                      std::string disconnectTime,
+                      std::string duration,
+                      std::string timeToday)
+                : username_(std::move(username)),
+                  password_(std::move(password)),
+                  sessionPort_(sessionPort),
+                  connectTime_(std::move(connectTime)),
+                  disconnectTime_(std::move(disconnectTime)),
+                  duration_(std::move(duration)),
+                  timeToday_(std::move(timeToday)) {}
+
+        UserLoginInfo (
+                std::string username,
+                std::string password)
+                : username_(std::move(username)),
+                  password_(std::move(password))
+        {}
 
         struct Comparator {
             using InfoComparator = std::true_type;
@@ -290,6 +322,9 @@ public:
     const std::unordered_map<std::string, std::vector<UserInfo>>& getUsers() const {
         return users;
     }
+    const std::unordered_map<std::string, std::vector<UserLoginInfo>>& getUsersList() const {
+        return usersList;
+    }
 
     SocketStatusInfo StartServer();
 
@@ -309,11 +344,12 @@ public:
     void HandleSendTo(Server::InterfaceClientSession &client, uint16_t codeSequence,
                       const std::string& recipientUsername, const std::string& message);
 
-    bool IsUserRegistered(const std::string& username) const;
+    bool IsUserRegistered(const std::string& username, Server &server) const;
 
 private:
 
     std::unordered_map<std::string, std::vector<UserInfo>> users;
+    std::unordered_map<std::string, std::vector<UserLoginInfo>> usersList;
     std::mutex usersMutex;
 
     using ServerSessionIterator = std::list<std::unique_ptr<InterfaceClientSession>>::iterator;

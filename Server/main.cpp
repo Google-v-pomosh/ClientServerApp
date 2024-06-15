@@ -22,7 +22,7 @@ Server server(8081,
 #ifdef DEGUGLOG
                   std::cout << "Client " << getHostStr(client) << " send data [ " << dataBuffer.size() << "bytes ]: " << (char*)dataBuffer.data() << '\n';
 #endif
-                    client.HandleData(dataBuffer, server);
+                    client.HandleData(dataBuffer, server, client);
                     //client.AutentficateUserInfo(dataBuffer,client, server);
                     //client.SendData("Hello, client\0", sizeof ("Hello, client\0"));
               },

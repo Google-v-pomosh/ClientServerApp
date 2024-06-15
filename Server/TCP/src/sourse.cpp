@@ -621,10 +621,21 @@ void Server::HandleSendTo(Server::InterfaceClientSession &client, uint16_t codeS
     client.SendData(&response, sizeof(response));
 }
 
-bool Server::IsUserRegistered(const std::string &username) const {
+/*bool Server::IsUserRegistered(const std::string &username) const {
     UserLoginInfo userLoginInfo;
     userLoginInfo.username_ = username;
     return userManager.Find(userLoginInfo) != nullptr;
+
+
+}*/
+
+bool Server::IsUserRegistered(const std::string &username, Server &server) const {
+    std::lock_guard<std::mutex> lock(server.usersMutex);
+    auto it = server.usersList.find(username);
+    if (it == server.usersList.end()) {
+        return false;
+    }
+    return true;
 }
 
 Server::InterfaceClientSession::InterfaceClientSession(SocketHandle_t socket, SocketAddressIn_t address)
@@ -969,6 +980,60 @@ bool Server::InterfaceClientSession::AutentficateUserInfo(const DataBuffer_t& da
     return true;
 }
 
+bool Server::InterfaceClientSession::RegisteredUserInfo(const std::string &username,
+                                                        const std::string &password,
+                                                        Server &server,
+                                                        InterfaceClientSession &client) {
+
+
+    std::lock_guard<std::mutex> lock(server.usersMutex);
+    try {
+        auto it = server.usersList.find(username);
+        if (it == server.usersList.end()) {
+            server.usersList.emplace(username, std::vector<Server::UserLoginInfo>{UserLoginInfo{username,
+                                                                                    password,
+                                                                                    client.GetPort(),
+                                                                                    client.GetConnectionTime(),
+                                                                                    "",
+                                                                                    "",
+                                                                                    client.GetDayNow()}});
+#ifdef DEBUGLOG
+            std::cout << "User '" << username << "' has been assigned port: " << client.GetPort() << std::endl;
+#endif
+        }
+        return true;
+    }
+    catch (...) {
+        throw;
+    }
+}
+
+bool Server::InterfaceClientSession::AuthorizeUserInfo(const std::string &username,
+                                                       const std::string &password,
+                                                       Server &server,
+                                                       InterfaceClientSession &client) {
+
+
+    std::lock_guard<std::mutex> lock(server.usersMutex);
+    try {
+        auto it = server.usersList.find(username);
+        it->second.emplace_back(username,
+                                password,
+                                client.GetPort(),
+                                client.GetConnectionTime(),
+                                "",
+                                "",
+                                client.GetDayNow());
+#ifdef DEBUGLOG
+        std::cout << "User '" << username << "' authenticated successfully\n";
+#endif
+
+        return true;
+    }
+    catch (...) {
+        throw;
+    }
+}
 
 
 void Server::InterfaceClientSession::OnDisconnect(const InterfaceClientSession& client, Server& server) {
@@ -1164,7 +1229,7 @@ bool Server::InterfaceClientSession::checkHash(const std::string &content, const
     return (computedHashStr == receivedHash);
 }
 
-void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &server) {
+void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &server, InterfaceClientSession& client) {
     auto it = data.begin();
     uint16_t code_sequence = NetworkThreadPool::Extract<uint16_t>(it);
     MessageType act = NetworkThreadPool::Extract<MessageType>(it);
@@ -1175,7 +1240,7 @@ void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &serv
     if (act == MessageType::Registered) {
         user_name = NetworkThreadPool::ExtractString(it);
         pass_word = NetworkThreadPool::ExtractString(it);
-        if (server.IsUserRegistered(user_name)) {
+        if (server.IsUserRegistered(user_name, server)) {
             act = MessageType::Authorize;
         }
     }
@@ -1193,6 +1258,8 @@ void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &serv
 #endif
                 return;
             }
+            RegisteredUserInfo(user_name, pass_word, server, client);
+
             server.HandleRegisterUser(*this, code_sequence, user_name, pass_word);
             return;
         }
@@ -1201,12 +1268,31 @@ void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &serv
                 user_name = NetworkThreadPool::ExtractString(it);
                 pass_word = NetworkThreadPool::ExtractString(it);
             }
+            AuthorizeUserInfo(user_name, pass_word, server, client);
+
+            std::string hash = NetworkThreadPool::ExtractString(it);
+            if (!checkHash(user_name + pass_word, hash)) {
+#ifdef DEBUGLOG
+                std::cerr << "Hash mismatch\n";
+#endif
+                return;
+            }
+
             server.HandleAuthorize(*this, code_sequence, user_name, pass_word);
             return;
         }
         case MessageType::SendingTo: {
             std::string recipient_username = NetworkThreadPool::ExtractString(it);
             std::string message = NetworkThreadPool::ExtractString(it);
+            std::string hash = NetworkThreadPool::ExtractString(it);
+
+            if (!checkHash(recipient_username + message, hash)) {
+#ifdef DEBUGLOG
+                std::cerr << "Hash mismatch\n";
+#endif
+                return;
+            }
+
             server.HandleSendTo(*this, code_sequence, recipient_username, message);
             return;
         }
@@ -1215,8 +1301,6 @@ void Server::InterfaceClientSession::HandleData(DataBuffer_t &data, Server &serv
             return;
     }
 }
-
-
 
 ServerKeepAliveConfig::ServerKeepAliveConfig(KeepAliveProperty_t idle,
                                                KeepAliveProperty_t interval,
@@ -1275,7 +1359,7 @@ bool Server::ClientSessionComparator::operator()(const Server::ConnectionInfo &l
 
 Server::UserLoginInfo* Server::UserManager::Registred(std::string name, std::string pass) {
     std::lock_guard lockGuard(sharedMutex);
-    auto info = userLoginInfoSet.emplace(UserLoginInfo{std::move(name), std::move(pass)});
+    auto info = userLoginInfoSet.emplace(std::move(name), std::move(pass));
     if(info.second) {
         return const_cast<UserLoginInfo*>(&*info.first);
     } else {
