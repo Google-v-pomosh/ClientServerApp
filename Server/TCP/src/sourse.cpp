@@ -320,7 +320,7 @@ void Server::HandlingAcceptLoop() {
             std::unique_ptr<InterfaceClientSession> client(new InterfaceClientSession(clientSocket, clientAddr));
             m_connectHandle_(*client);
             m_clientMutex_.lock();
-            m_session_list_.emplace_back(std::move(client));
+            m_session_list_.emplace(std::move(client));
             m_clientMutex_.unlock();
         } else {
             shutdown(clientSocket, 0);
@@ -459,7 +459,7 @@ void Server::initializeDatabase() {
     int rc;
     char* errorMsg = nullptr;
 
-    rc = sqlite3_open("C:/CLionProjects/ClientServerApp/Server/example.db", &dbConnection);
+    rc = sqlite3_open(DB_PATH, &dbConnection);
     if (rc) {
         std::cerr << "Can't open database: " << sqlite3_errmsg(dbConnection) << std::endl;
         sqlite3_close(dbConnection);
