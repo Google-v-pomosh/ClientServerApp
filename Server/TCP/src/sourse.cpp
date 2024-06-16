@@ -425,7 +425,7 @@ void Server::initializeDatabase() {
     int rc;
     char* errorMsg = nullptr;
 
-    rc = sqlite3_open("C:/CLionProjects/ClientServerApp/Server/example.db", &dbConnection);
+    rc = sqlite3_open(DB_PATH, &dbConnection);
     if (rc) {
         std::cerr << "Can't open database: " << sqlite3_errmsg(dbConnection) << std::endl;
         sqlite3_close(dbConnection);

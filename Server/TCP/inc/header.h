@@ -34,6 +34,12 @@
 #include <cstdlib>
 #endif
 
+#ifdef _WIN32
+#define DB_PATH "C:/CLionProjects/ClientServerApp/Server/example.db"
+#else
+#define DB_PATH "/home/alex/CLionProjects/ClientServerApp/Server/example.db"
+#endif
+
 #include "../../../SQLite/Lib/inc/sqlite3.h"
 #include "../../../TCP/inc/header.h"
 
