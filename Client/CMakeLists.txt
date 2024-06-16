@@ -5,8 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB SOURCES   "main.cpp"
                     "TCP/src/*.cpp"
-                    "../TCP/src/*.cpp"
-                    "../Lib/sha256/src/*.c")
+                    "../TCP/src/*.cpp")
 
 
 add_executable(Client ${SOURCES})
